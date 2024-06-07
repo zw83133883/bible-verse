@@ -63,6 +63,11 @@ def get_random_scenic_image():
 
 
 
+from PIL import Image, ImageDraw, ImageFont
+from io import BytesIO
+import textwrap
+import logging
+
 def overlay_text_on_image(image_bytes, verse, reference, screen_width, screen_height):
     try:
         # Open the image
@@ -106,16 +111,20 @@ def overlay_text_on_image(image_bytes, verse, reference, screen_width, screen_he
 
         # Determine text placement for centering
         ref_x = (screen_width - ref_width) // 2
-        verse_x = (screen_width - max([d.textbbox((0, 0), line, font=font)[2] for line in verse_lines])) // 2
         y = (screen_height - total_text_height) // 2
 
-        # Draw text with drop shadow
+        # Draw reference text with drop shadow
         d.text((ref_x + shadow_offset, y + shadow_offset), reference, font=font, fill=(0, 0, 0, 150))
         d.text((ref_x, y), reference, font=font, fill=(255, 255, 255, 255))
 
-        # Draw verse lines with proper vertical spacing
         y += ref_height + 20
+
+        # Calculate max width of verse lines for centering
+        max_line_width = max([d.textbbox((0, 0), line, font=font)[2] for line in verse_lines])
+
+        # Draw verse lines with proper vertical spacing
         for line in verse_lines:
+            verse_x = (screen_width - max_line_width) // 2
             d.text((verse_x + shadow_offset, y + shadow_offset), line, font=font, fill=(0, 0, 0, 150))
             d.text((verse_x, y), line, font=font, fill=(255, 255, 255, 255))
             y += line_height + line_spacing
