@@ -88,16 +88,16 @@ def get_random_scenic_image():
         logging.error(f"Error fetching scenic image: {e}")
         return None
     
-def get_logo():
+def get_logo(logo_type, x, y):
     try:
         current_directory = os.getcwd()
         logo_folder = os.path.join(current_directory, 'logo')
-        logo_path = os.path.join(logo_folder, 'logo.png')
+        logo_path = os.path.join(logo_folder, f'{logo_type}.png')
         # Open the logo image file
         with open(logo_path, 'rb') as logo_file:
             logo_image = Image.open(logo_file).convert("RGBA")  # Ensure the image is in RGBA mode for transparency
         # Resize the logo image to the default size
-        default_logo_size = (512,512)  # Update with your default logo size
+        default_logo_size = (512, 512)  # Update with your default logo size
         resized_logo_image = logo_image.resize(default_logo_size)
         # Save the resized logo image to a BytesIO object
         resized_logo_bytes = BytesIO()
@@ -109,8 +109,7 @@ def get_logo():
         return None
 
 
-
-def overlay_text_on_image(logo_bytes,image_bytes, verse, reference, screen_width, screen_height):
+def overlay_text_on_image(audio_bytes,logo_bytes, image_bytes, verse, reference, screen_width, screen_height):
     try:
         # Open the image
         image = Image.open(image_bytes).convert("RGBA")
@@ -160,25 +159,33 @@ def overlay_text_on_image(logo_bytes,image_bytes, verse, reference, screen_width
         # Draw reference text with drop shadow
         for line in ref_lines:
             ref_x = (screen_width - d.textbbox((0, 0), line, font=font)[2]) // 2
-            # Simulate bold by drawing text multiple times with slight offsets
-            for offset in [(shadow_offset, shadow_offset), (-shadow_offset, -shadow_offset), (shadow_offset, -shadow_offset), (-shadow_offset, shadow_offset)]:
-                d.text((ref_x + offset[0], y + offset[1]), line, font=font, fill=(0, 0, 0, 150))
+            d.text((ref_x + shadow_offset, y + shadow_offset), line, font=font, fill=(0, 0, 0, 150))
             d.text((ref_x, y), line, font=font, fill=(255, 255, 255, 255))
             y += ref_line_height + line_spacing
 
         y += 20  # Additional spacing between reference and verse
 
-        # Draw verse lines with proper vertical spacing
         for line in verse_lines:
             verse_x = (screen_width - d.textbbox((0, 0), line, font=font)[2]) // 2
-            # Simulate bold by drawing text multiple times with slight offsets
-            for offset in [(shadow_offset, shadow_offset), (-shadow_offset, -shadow_offset), (shadow_offset, -shadow_offset), (-shadow_offset, shadow_offset)]:
-                d.text((verse_x + offset[0], y + offset[1]), line, font=font, fill=(0, 0, 0, 150))
+            d.text((verse_x + shadow_offset, y + shadow_offset), line, font=font, fill=(0, 0, 0, 150))
             d.text((verse_x, y), line, font=font, fill=(255, 255, 255, 255))
             y += verse_line_height + line_spacing
 
-        combined = Image.alpha_composite(image, txt)
-        # Open the logo image
+        audio = Image.open(audio_bytes).convert("RGBA")
+        # Resize the logo to fit the image width
+        audio_width = screen_width //6
+        audio_height = int((audio_width / audio.width) * audio.height)
+        audio = audio.resize((audio_width, audio_height))
+
+        audio_x = screen_width - audio.width - 60  # 20 pixels from the right edge
+        audio_y = screen_height - audio.height - 360  # 20 pixels from the bottom edge
+        image.paste(audio, (audio_x, audio_y), audio)
+
+
+
+
+
+        # Open the audio image
         logo = Image.open(logo_bytes).convert("RGBA")
         # Resize the logo to fit the image width
         logo_width = screen_width // 10
@@ -211,11 +218,13 @@ def random_verse():
     try:
         bible_verse, reference = get_random_bible_verse()
         image_bytes = get_random_scenic_image()
-        logo_bytes = get_logo()
+        # Usage
+        logo_bytes = get_logo('logo',512,512)
+        audio_logo_bytes = get_logo('audio',980,862)
         if image_bytes is None:
             return "Could not fetch scenic image at this time.", 500
 
-        combined_image_bytes = overlay_text_on_image(logo_bytes,image_bytes, bible_verse, reference,1080,1920)
+        combined_image_bytes = overlay_text_on_image(audio_logo_bytes,logo_bytes,image_bytes, bible_verse, reference,1080,1920)
         if combined_image_bytes is None:
             return "Error processing image.", 500
 
