@@ -26,12 +26,6 @@ def ratelimit_handler(e):
     }), 429
 
 
-# API Ninjas configuration
-API_NINJAS_KEY = 'KOhfDMigH08gPebS/BhCVg==L5zJzDOsSgwbTLh0'  # Replace if needed
-CATEGORY = 'nature'
-API_URL = 'https://api.api-ninjas.com/v1/randomimage?category={}'
-
-
 # Logging configuration
 logging.basicConfig(level=logging.DEBUG)
 
@@ -93,10 +87,30 @@ def get_random_scenic_image():
     except Exception as e:
         logging.error(f"Error fetching scenic image: {e}")
         return None
+    
+def get_logo():
+    try:
+        current_directory = os.getcwd()
+        logo_folder = os.path.join(current_directory, 'logo')
+        logo_path = os.path.join(logo_folder, 'logo.png')
+        # Open the logo image file
+        with open(logo_path, 'rb') as logo_file:
+            logo_image = Image.open(logo_file).convert("RGBA")  # Ensure the image is in RGBA mode for transparency
+        # Resize the logo image to the default size
+        default_logo_size = (512,512)  # Update with your default logo size
+        resized_logo_image = logo_image.resize(default_logo_size)
+        # Save the resized logo image to a BytesIO object
+        resized_logo_bytes = BytesIO()
+        resized_logo_image.save(resized_logo_bytes, format='PNG')  # Use the appropriate format for your logo
+        resized_logo_bytes.seek(0)
+        return resized_logo_bytes
+    except Exception as e:
+        logging.error(f"Error fetching logo image: {e}")
+        return None
 
 
 
-def overlay_text_on_image(image_bytes, verse, reference, screen_width, screen_height):
+def overlay_text_on_image(logo_bytes,image_bytes, verse, reference, screen_width, screen_height):
     try:
         # Open the image
         image = Image.open(image_bytes).convert("RGBA")
@@ -160,6 +174,21 @@ def overlay_text_on_image(image_bytes, verse, reference, screen_width, screen_he
             y += verse_line_height + line_spacing
 
         combined = Image.alpha_composite(image, txt)
+        # Open the logo image
+        logo = Image.open(logo_bytes).convert("RGBA")
+        # Resize the logo to fit the image width
+        logo_width = screen_width // 10
+        logo_height = int((logo_width / logo.width) * logo.height)
+        logo = logo.resize((logo_width, logo_height))
+
+        # Calculate logo position at the bottom, centered
+        logo_x = (screen_width - logo.width) // 2
+        logo_y = screen_height - logo.height - 40
+
+        # Paste the logo onto the image
+        image.paste(logo, (logo_x, logo_y), logo)
+
+        combined = Image.alpha_composite(image, txt)
 
         combined_bytes = BytesIO()
         combined.save(combined_bytes, format='PNG')
@@ -178,10 +207,11 @@ def random_verse():
     try:
         bible_verse, reference = get_random_bible_verse()
         image_bytes = get_random_scenic_image()
+        logo_bytes = get_logo()
         if image_bytes is None:
             return "Could not fetch scenic image at this time.", 500
 
-        combined_image_bytes = overlay_text_on_image(image_bytes, bible_verse, reference,1080,1920)
+        combined_image_bytes = overlay_text_on_image(logo_bytes,image_bytes, bible_verse, reference,1080,1920)
         if combined_image_bytes is None:
             return "Error processing image.", 500
 
