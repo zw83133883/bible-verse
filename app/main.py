@@ -1,5 +1,7 @@
-from flask import Flask, send_file
+from flask import Flask, send_file,jsonify
 import requests
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 from io import BytesIO
 from PIL import Image, ImageDraw, ImageFont
 import logging
@@ -10,6 +12,20 @@ import random
 
 app = Flask(__name__)
 
+# Initialize the rate limiter
+limiter = Limiter(
+    get_remote_address,
+    app=app,
+    default_limits=["20 per minute"]  # Adjust the rate limit as needed
+)
+# Custom error message for rate limiting
+@app.errorhandler(429)
+def ratelimit_handler(e):
+    return jsonify({
+        "error": "You have exceeded the request limit. Please try again later."
+    }), 429
+
+
 # API Ninjas configuration
 API_NINJAS_KEY = 'KOhfDMigH08gPebS/BhCVg==L5zJzDOsSgwbTLh0'  # Replace if needed
 CATEGORY = 'nature'
@@ -19,35 +35,54 @@ API_URL = 'https://api.api-ninjas.com/v1/randomimage?category={}'
 # Logging configuration
 logging.basicConfig(level=logging.DEBUG)
 
-# Font Setup
-font_directory = os.path.dirname(os.path.abspath(__file__))
-font_file = os.path.join(font_directory, "ModernSans-Light.ttf")  # Replace with your modern font file
+font_file = os.path.join(os.path.dirname(__file__), '..', 'font', "font.ttf")
 
-# Function to fetch a random Bible verse
-def get_random_bible_verse():
+
+# Path to the top_verses.txt file
+TOP_VERSES_FILE = os.path.join(os.path.dirname(__file__), '..',"top_verses.txt")
+
+# Load verses into memory once
+def load_verses(file_path):
     try:
-        response = requests.get("https://bible-api.com/?random=verse")
+        with open(file_path, 'r') as file:
+            verses = [line.strip() for line in file if line.strip()]
+        return verses
+    except Exception as e:
+        logging.error(f"Error loading verses: {e}")
+        return []
+
+# Load the verses once at the start
+VERSUS = load_verses(TOP_VERSES_FILE)
+
+def get_random_bible_verse():
+    if not VERSUS:
+        return "No verses available.", ""
+    try:
+        random_verse = random.choice(VERSUS)
+        # Fetch the verse details from the API
+        response = requests.get(f"https://bible-api.com/{random_verse}")
         response.raise_for_status()
         data = response.json()
         verse = data['text']
-        # Remove "(web)" before extracting the translation ID
-        reference = f"{data['reference'].replace('(web)', '')} ({data['translation_id']})" 
+        reference = f"{data['reference'].replace('(web)', '')} ({data['translation_id']})"
         return verse, reference
     except requests.RequestException as e:
         logging.error(f"Error fetching Bible verse: {e}")
         return "Could not fetch Bible verse at this time.", ""
 
-# Function to get a random scenic image from API Ninjas
-
 
 def get_random_scenic_image():
     try:
+        # Get the current directory
+        current_directory = os.getcwd()
+        # Path to the images folder
+        images_folder = os.path.join(current_directory, 'images')
         # List all files in the 'images' directory
-        image_files = os.listdir('images')
+        image_files = os.listdir(images_folder)
         # Select a random image file
         image_file = random.choice(image_files)
         # Open the selected image file
-        image = Image.open(os.path.join('images', image_file))
+        image = Image.open(os.path.join(images_folder, image_file))
         # Resize the image to 1080x1920
         resized_image = image.resize((1080, 1920))
         # Save the resized image to a BytesIO object
@@ -60,13 +95,6 @@ def get_random_scenic_image():
         return None
 
 
-
-
-
-from PIL import Image, ImageDraw, ImageFont
-from io import BytesIO
-import textwrap
-import logging
 
 def overlay_text_on_image(image_bytes, verse, reference, screen_width, screen_height):
     try:
@@ -89,45 +117,47 @@ def overlay_text_on_image(image_bytes, verse, reference, screen_width, screen_he
 
         # Remove "(web)" from the reference
         reference = reference.replace('(web)', '')
-
         # Font settings
         font_size = 60
-        font = ImageFont.truetype("./font.ttf", font_size)
+        font = ImageFont.truetype(font_file, font_size)
         line_spacing = 10  # Adjust for desired spacing between lines
         shadow_offset = 2
 
-        # Wrap and justify verse text
+        # Dynamically wrap the reference text if it's too long
+        wrapped_reference = textwrap.fill(reference, width=35)
+        ref_lines = wrapped_reference.splitlines()
+
+        # Dynamically wrap the verse text
         wrapped_verse = textwrap.fill(verse, width=35)
         verse_lines = wrapped_verse.splitlines()
 
         # Calculate text dimensions
-        left, top, ref_width, ref_height = d.textbbox((0, 0), reference, font=font)
+        ref_line_height = max([d.textbbox((0, 0), line, font=font)[3] for line in ref_lines])
+        verse_line_height = max([d.textbbox((0, 0), line, font=font)[3] for line in verse_lines])
 
-        # Calculate total height of the verse, including line spacing
-        _, _, _, line_height = d.textbbox((0, 0), "A", font=font)  # Get height of a single line
-        verse_height = (line_height + line_spacing) * len(verse_lines) - line_spacing  # Total height with spacing
+        ref_height = (ref_line_height + line_spacing) * len(ref_lines) - line_spacing
+        verse_height = (verse_line_height + line_spacing) * len(verse_lines) - line_spacing
 
         total_text_height = ref_height + verse_height + 20
 
         # Determine text placement for centering
-        ref_x = (screen_width - ref_width) // 2
         y = (screen_height - total_text_height) // 2
 
         # Draw reference text with drop shadow
-        d.text((ref_x + shadow_offset, y + shadow_offset), reference, font=font, fill=(0, 0, 0, 150))
-        d.text((ref_x, y), reference, font=font, fill=(255, 255, 255, 255))
+        for line in ref_lines:
+            ref_x = (screen_width - d.textbbox((0, 0), line, font=font)[2]) // 2
+            d.text((ref_x + shadow_offset, y + shadow_offset), line, font=font, fill=(0, 0, 0, 150))
+            d.text((ref_x, y), line, font=font, fill=(255, 255, 255, 255))
+            y += ref_line_height + line_spacing
 
-        y += ref_height + 20
-
-        # Calculate max width of verse lines for centering
-        max_line_width = max([d.textbbox((0, 0), line, font=font)[2] for line in verse_lines])
+        y += 20  # Additional spacing between reference and verse
 
         # Draw verse lines with proper vertical spacing
         for line in verse_lines:
-            verse_x = (screen_width - max_line_width) // 2
+            verse_x = (screen_width - d.textbbox((0, 0), line, font=font)[2]) // 2
             d.text((verse_x + shadow_offset, y + shadow_offset), line, font=font, fill=(0, 0, 0, 150))
             d.text((verse_x, y), line, font=font, fill=(255, 255, 255, 255))
-            y += line_height + line_spacing
+            y += verse_line_height + line_spacing
 
         combined = Image.alpha_composite(image, txt)
 

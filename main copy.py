@@ -6,6 +6,7 @@ import logging
 import os
 import textwrap
 from gtts import gTTS
+import random
 
 app = Flask(__name__)
 
@@ -22,22 +23,37 @@ logging.basicConfig(level=logging.DEBUG)
 font_directory = os.path.dirname(os.path.abspath(__file__))
 font_file = os.path.join(font_directory, "ModernSans-Light.ttf")  # Replace with your modern font file
 
-# Function to fetch a random Bible verse
-def get_random_bible_verse():
+# Path to the top_verses.txt file
+TOP_VERSES_FILE = os.path.join(os.path.dirname(__file__), "top_verses.txt")
+
+# Load verses into memory once
+def load_verses(file_path):
     try:
-        response = requests.get("https://bible-api.com/?random=verse")
+        with open(file_path, 'r') as file:
+            verses = [line.strip() for line in file if line.strip()]
+        return verses
+    except Exception as e:
+        logging.error(f"Error loading verses: {e}")
+        return []
+
+# Load the verses once at the start
+VERSUS = load_verses(TOP_VERSES_FILE)
+
+def get_random_bible_verse():
+    if not VERSUS:
+        return "No verses available.", ""
+    try:
+        random_verse = random.choice(VERSUS)
+        # Fetch the verse details from the API
+        response = requests.get(f"https://bible-api.com/{random_verse}")
         response.raise_for_status()
         data = response.json()
         verse = data['text']
-        # Remove "(web)" before extracting the translation ID
-        reference = f"{data['reference'].replace('(web)', '')} ({data['translation_id']})" 
+        reference = f"{data['reference'].replace('(web)', '')} ({data['translation_id']})"
         return verse, reference
     except requests.RequestException as e:
         logging.error(f"Error fetching Bible verse: {e}")
         return "Could not fetch Bible verse at this time.", ""
-
-# Function to get a random scenic image from API Ninjas
-from PIL import Image
 
 def get_random_scenic_image():
     try:
