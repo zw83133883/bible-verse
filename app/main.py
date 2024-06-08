@@ -160,7 +160,9 @@ def overlay_text_on_image(logo_bytes,image_bytes, verse, reference, screen_width
         # Draw reference text with drop shadow
         for line in ref_lines:
             ref_x = (screen_width - d.textbbox((0, 0), line, font=font)[2]) // 2
-            d.text((ref_x + shadow_offset, y + shadow_offset), line, font=font, fill=(0, 0, 0, 150))
+            # Simulate bold by drawing text multiple times with slight offsets
+            for offset in [(shadow_offset, shadow_offset), (-shadow_offset, -shadow_offset), (shadow_offset, -shadow_offset), (-shadow_offset, shadow_offset)]:
+                d.text((ref_x + offset[0], y + offset[1]), line, font=font, fill=(0, 0, 0, 150))
             d.text((ref_x, y), line, font=font, fill=(255, 255, 255, 255))
             y += ref_line_height + line_spacing
 
@@ -169,7 +171,9 @@ def overlay_text_on_image(logo_bytes,image_bytes, verse, reference, screen_width
         # Draw verse lines with proper vertical spacing
         for line in verse_lines:
             verse_x = (screen_width - d.textbbox((0, 0), line, font=font)[2]) // 2
-            d.text((verse_x + shadow_offset, y + shadow_offset), line, font=font, fill=(0, 0, 0, 150))
+            # Simulate bold by drawing text multiple times with slight offsets
+            for offset in [(shadow_offset, shadow_offset), (-shadow_offset, -shadow_offset), (shadow_offset, -shadow_offset), (-shadow_offset, shadow_offset)]:
+                d.text((verse_x + offset[0], y + offset[1]), line, font=font, fill=(0, 0, 0, 150))
             d.text((verse_x, y), line, font=font, fill=(255, 255, 255, 255))
             y += verse_line_height + line_spacing
 
