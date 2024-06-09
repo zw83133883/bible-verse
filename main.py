@@ -1,4 +1,4 @@
-from flask import Flask, send_file,jsonify
+from flask import Flask, send_file,jsonify, render_template
 import requests
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
@@ -9,14 +9,22 @@ import os
 import textwrap
 from gtts import gTTS
 import random
+import pyttsx3
+from datetime import datetime, timedelta
+import base64
 
-app = Flask(__name__)
+
+app = Flask(__name__, static_folder='static', template_folder='templates')
+# Path to the top_verses.txt file
+engine = pyttsx3.init()
+TOP_VERSES_FILE = os.path.join(os.path.dirname(__file__),"top_verses.txt")
+# Serve static files from the 'static' folder
 
 # Initialize the rate limiter
 limiter = Limiter(
     get_remote_address,
     app=app,
-    default_limits=["20 per minute"]  # Adjust the rate limit as needed
+    default_limits=["10 per minute"]  # Adjust the rate limit as needed
 )
 # Custom error message for rate limiting
 @app.errorhandler(429)
@@ -29,11 +37,10 @@ def ratelimit_handler(e):
 # Logging configuration
 logging.basicConfig(level=logging.DEBUG)
 
-font_file = os.path.join(os.path.dirname(__file__), '..', 'font', "font.ttf")
+font_file = os.path.join(os.path.dirname(__file__), 'font', "font.ttf")
 
 
-# Path to the top_verses.txt file
-TOP_VERSES_FILE = os.path.join(os.path.dirname(__file__), '..',"top_verses.txt")
+
 
 # Load verses into memory once
 def load_verses(file_path):
@@ -144,9 +151,19 @@ def overlay_text_on_image(audio_bytes,logo_bytes, image_bytes, verse, reference,
         wrapped_verse = textwrap.fill(verse, width=35)
         verse_lines = wrapped_verse.splitlines()
 
+
+
         # Calculate text dimensions
-        ref_line_height = max([d.textbbox((0, 0), line, font=font)[3] for line in ref_lines])
-        verse_line_height = max([d.textbbox((0, 0), line, font=font)[3] for line in verse_lines])
+        if ref_lines:  # Check if ref_lines is not empty
+            ref_line_height = max([d.textbbox((0, 0), line, font=font)[3] for line in ref_lines])
+        else:
+            ref_line_height = 0  # Or set a default value if needed
+
+        if verse_lines:  # Check if verse_lines is not empty
+            verse_line_height = max([d.textbbox((0, 0), line, font=font)[3] for line in verse_lines])
+        else:
+            verse_line_height = 0  # Or set a default value if needed
+
 
         ref_height = (ref_line_height + line_spacing) * len(ref_lines) - line_spacing
         verse_height = (verse_line_height + line_spacing) * len(verse_lines) - line_spacing
@@ -171,18 +188,15 @@ def overlay_text_on_image(audio_bytes,logo_bytes, image_bytes, verse, reference,
             d.text((verse_x, y), line, font=font, fill=(255, 255, 255, 255))
             y += verse_line_height + line_spacing
 
-        audio = Image.open(audio_bytes).convert("RGBA")
-        # Resize the logo to fit the image width
-        audio_width = screen_width //6
-        audio_height = int((audio_width / audio.width) * audio.height)
-        audio = audio.resize((audio_width, audio_height))
+        # audio = Image.open(audio_bytes).convert("RGBA")
+        # # Resize the logo to fit the image width
+        # audio_width = screen_width //6
+        # audio_height = int((audio_width / audio.width) * audio.height)
+        # audio = audio.resize((audio_width, audio_height))
 
-        audio_x = screen_width - audio.width - 60  # 20 pixels from the right edge
-        audio_y = screen_height - audio.height - 360  # 20 pixels from the bottom edge
-        image.paste(audio, (audio_x, audio_y), audio)
-
-
-
+        # audio_x = screen_width - audio.width - 60  # 20 pixels from the right edge
+        # audio_y = screen_height - audio.height - 360  # 20 pixels from the bottom edge
+        # image.paste(audio, (audio_x, audio_y), audio)
 
 
         # Open the audio image
@@ -218,20 +232,70 @@ def random_verse():
     try:
         bible_verse, reference = get_random_bible_verse()
         image_bytes = get_random_scenic_image()
-        # Usage
+
         logo_bytes = get_logo('logo',512,512)
         audio_logo_bytes = get_logo('audio',980,862)
         if image_bytes is None:
             return "Could not fetch scenic image at this time.", 500
+            # Select a male voice with an accent
+        for voice in engine.getProperty('voices'):
+            if "David" in voice.name:  # Or any other clearly male voice name
+                engine.setProperty('voice', voice.id)
+                break
+         # Generate TTS audio
+        tts = gTTS(bible_verse)
+        audio_bytes_io = BytesIO()
+        tts.write_to_fp(audio_bytes_io)
+        audio_bytes_io.seek(0)
 
         combined_image_bytes = overlay_text_on_image(audio_logo_bytes,logo_bytes,image_bytes, bible_verse, reference,1080,1920)
         if combined_image_bytes is None:
-            return "Error processing image.", 500
+            return "Error processing image.", 500    
 
-        return send_file(combined_image_bytes, mimetype='image/png')
+        # Convert audio bytes to base64 string
+        
+        audio_data_base64 = base64.b64encode(audio_bytes_io.getvalue()).decode('utf-8')
+        return render_template('index.html', image_data=base64.b64encode(combined_image_bytes.getvalue()).decode(),audio_data=audio_data_base64)
     except Exception as e:
         logging.error(f"Error in /random_verse endpoint: {e}")
         return "Internal server error.", 500
+    
+# Helper function to set a male voice (extracted for clarity)
+def set_male_voice(engine):
+    for voice in engine.getProperty('voices'):
+        if voice.gender == 'Male':
+            engine.setProperty('voice', voice.id)
+            return  # Exit the loop after setting the first male voice
+
+def generate_verse_data():
+    bible_verse, reference = get_random_bible_verse()
+    image_bytes = get_random_scenic_image()
+
+    if image_bytes is None:
+        raise Exception("Could not fetch scenic image.")
+
+    logo_bytes = get_logo('logo', 512, 512)
+    audio_logo_bytes = get_logo('audio', 980, 862)
+
+    # Text-to-Speech (TTS) generation
+    engine = pyttsx3.init()
+    set_male_voice(engine)  # Attempt to use a male voice
+    audio_bytes_io = BytesIO()
+    engine.save_to_file(bible_verse, audio_bytes_io)
+    audio_bytes_io.seek(0)
+    audio_data_base64 = base64.b64encode(audio_bytes_io.getvalue()).decode('utf-8')
+
+    combined_image_bytes = overlay_text_on_image(
+        audio_logo_bytes, logo_bytes, image_bytes, bible_verse, reference, 1080, 1920
+    )
+
+    if combined_image_bytes is None:
+        raise Exception("Error processing image.")
+
+    return {
+        'image_data': base64.b64encode(combined_image_bytes.getvalue()).decode(),
+        'audio_data': audio_data_base64,
+    }
 
 
 
