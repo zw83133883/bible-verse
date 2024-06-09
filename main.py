@@ -40,8 +40,6 @@ logging.basicConfig(level=logging.DEBUG)
 font_file = os.path.join(os.path.dirname(__file__), 'font', "font.ttf")
 
 
-
-
 # Load verses into memory once
 def load_verses(file_path):
     try:
@@ -116,7 +114,7 @@ def get_logo(logo_type, x, y):
         return None
 
 
-def overlay_text_on_image(audio_bytes,logo_bytes, image_bytes, verse, reference, screen_width, screen_height):
+def overlay_text_on_image(logo_bytes, image_bytes, verse, reference, screen_width, screen_height):
     try:
         # Open the image
         image = Image.open(image_bytes).convert("RGBA")
@@ -248,7 +246,7 @@ def random_verse():
         tts.write_to_fp(audio_bytes_io)
         audio_bytes_io.seek(0)
 
-        combined_image_bytes = overlay_text_on_image(audio_logo_bytes,logo_bytes,image_bytes, bible_verse, reference,1080,1920)
+        combined_image_bytes = overlay_text_on_image(logo_bytes,image_bytes, bible_verse, reference,1080,1920)
         if combined_image_bytes is None:
             return "Error processing image.", 500    
 
