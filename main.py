@@ -40,6 +40,11 @@ def get_db():
 engine = pyttsx3.init()
 TOP_VERSES_FILE = os.path.join(os.path.dirname(__file__),"top_verses.txt")
 
+def create_app():
+    app = Flask(__name__)
+    return app
+app = create_app()
+
 # Initialize the rate limiter
 limiter = Limiter(
     get_remote_address,
