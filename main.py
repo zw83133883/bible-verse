@@ -1,4 +1,4 @@
-from flask import Flask, send_file,jsonify, render_template
+from flask import Flask, send_file,jsonify, render_template,request,g
 import requests
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
@@ -12,13 +12,37 @@ import random
 import pyttsx3
 from datetime import datetime, timedelta
 import base64
+from bs4 import BeautifulSoup
+import sqlite3
+
+logging.basicConfig(level=logging.INFO)
+# Disable logging for specific libraries
+logging.getLogger('comtypes').setLevel(logging.ERROR)
+logging.getLogger('pyttsx3').setLevel(logging.ERROR)
+logging.getLogger("gtts").setLevel(logging.ERROR)
+logging.getLogger("urllib3").setLevel(logging.ERROR)
+logging.getLogger("PIL").setLevel(logging.ERROR)
+DATABASE = "bible.db"  # Replace with your database name
 
 
 app = Flask(__name__, static_folder='static', template_folder='templates')
-# Path to the top_verses.txt file
+
+# Add this teardown function to close the database connection after each request
+@app.teardown_appcontext
+def close_connection(exception):
+    db = getattr(g, '_database', None)
+    if db is not None:
+        db.close()
+        
+
+def get_db():
+    db = getattr(g, '_database', None)
+    if db is None:
+        db = g._database = sqlite3.connect(DATABASE)
+    return db
+
 engine = pyttsx3.init()
 TOP_VERSES_FILE = os.path.join(os.path.dirname(__file__),"top_verses.txt")
-# Serve static files from the 'static' folder
 
 # Initialize the rate limiter
 limiter = Limiter(
@@ -34,11 +58,8 @@ def ratelimit_handler(e):
     }), 429
 
 
-# Logging configuration
-logging.basicConfig(level=logging.DEBUG)
-
-font_file = os.path.join(os.path.dirname(__file__), 'font', "font.ttf")
-
+english_font_file = os.path.join(os.path.dirname(__file__), 'font', "font.ttf")
+chinese_font_file = os.path.join(os.path.dirname(__file__), 'font', "chinese.ttf")
 
 # Load verses into memory once
 def load_verses(file_path):
@@ -53,21 +74,70 @@ def load_verses(file_path):
 # Load the verses once at the start
 VERSUS = load_verses(TOP_VERSES_FILE)
 
-def get_random_bible_verse():
-    if not VERSUS:
-        return "No verses available.", ""
+# def get_random_bible_verse(version='niv'):
+#     if not VERSUS:
+#         logging.warning("No verses available.")  # Log a warning instead of returning a tuple
+#         return None, None  # Return None for both verse and reference if no verses
+
+#     random_verse = random.choice(VERSUS)  
+#     # Split the book from the chapter/verse, accounting for multi-word book names with numbers
+#     words = random_verse.split(" ")
+#     if words[0].isdigit():
+#         book = " ".join(words[:2]) 
+#         reference = words[2]      
+#     else:
+#         book = words[0]
+#         reference = words[1]
+
+#     url = f"http://ibibles.net/quote.php?{version}-{book.replace(' ', '')}/{reference}"
+#     print(f"Fetching verse from URL: {url}")  # Print the URL
+#     response = requests.get(url)
+#     if response.status_code == 200:
+#         soup = BeautifulSoup(response.text, 'html.parser')
+#         timestamp_element = soup.find('small')
+
+#         if timestamp_element:  # Check if timestamp element is found
+#             verse_text = timestamp_element.next_sibling.strip()
+#             verse_text = verse_text.split(" (")[0]  # Remove reference
+#             return verse_text, random_verse  # Return the verse text and reference
+#         else:
+#             print(f"Fetching verse from URL: {url}")
+#             logging.error("Timestamp element not found in HTML response.")  # Log the error
+#     else:
+#         logging.error(f"Error fetching Bible verse: {response.status_code}")  # Log the error
+
+#     return None, None  # Return None if verse retrieval or parsing fails
+# Function to get a random Bible verse from the database
+
+def get_random_bible_verse(version='niv'):
     try:
-        random_verse = random.choice(VERSUS)
-        # Fetch the verse details from the API
-        response = requests.get(f"https://bible-api.com/{random_verse}")
-        response.raise_for_status()
-        data = response.json()
-        verse = data['text']
-        reference = f"{data['reference'].replace('(web)', '')} ({data['translation_id']})"
-        return verse, reference
-    except requests.RequestException as e:
-        logging.error(f"Error fetching Bible verse: {e}")
-        return "Could not fetch Bible verse at this time.", ""
+        conn = get_db()
+        cursor = conn.cursor()
+
+        # Get the total number of verses for the given version
+        cursor.execute("SELECT COUNT(*) FROM verses WHERE language = ?", (version,))
+        total_verses = cursor.fetchone()[0]
+
+        if total_verses == 0:
+            logging.warning(f"No verses found for version: {version}")
+            return None, None
+
+        # Generate a random index within the range of available verses
+        random_index = random.randint(0, total_verses - 1)
+        
+        # Fetch the verse at the random index
+        cursor.execute("SELECT * FROM verses WHERE language = ? LIMIT 1 OFFSET ?", (version, random_index))
+        verse_data = cursor.fetchone()
+
+        conn.close()
+
+        if verse_data:
+            _, reference, verse_text, _, audio_data = verse_data 
+            return verse_text, reference, audio_data
+
+    except sqlite3.Error as e:
+        logging.error(f"Error fetching Bible verse from database: {e}")
+        return None, None
 
 
 def get_random_scenic_image():
@@ -114,7 +184,12 @@ def get_logo(logo_type, x, y):
         return None
 
 
-def overlay_text_on_image(logo_bytes, image_bytes, verse, reference, screen_width, screen_height):
+def overlay_text_on_image(version,logo_bytes, image_bytes, verse, reference, screen_width, screen_height):
+        # Define a dictionary to map versions to font files
+    font_map = {
+        'niv': english_font_file,  # Replace with the actual path to your NIV font
+        'cus':chinese_font_file
+    }
     try:
         # Open the image
         image = Image.open(image_bytes).convert("RGBA")
@@ -135,8 +210,9 @@ def overlay_text_on_image(logo_bytes, image_bytes, verse, reference, screen_widt
 
         # Remove "(web)" from the reference
         reference = reference.replace('(web)', '')
+        font_file = font_map.get(version.lower(),english_font_file)
         # Font settings
-        font_size = 60
+        font_size = get_font_size(verse,version)
         font = ImageFont.truetype(font_file, font_size)
         line_spacing = 10  # Adjust for desired spacing between lines
         shadow_offset = 2
@@ -221,39 +297,52 @@ def overlay_text_on_image(logo_bytes, image_bytes, verse, reference, screen_widt
         logging.error(f"Error overlaying text on image: {e}")
         return None
 
+def get_font_size(text, language, max_size=60, min_size=20):
+    base_size = max_size
+    if language == "cus":  # or any other Chinese language code
+        base_size = 40  # Smaller base size for Chinese
 
+    length = len(text)
+    font_size = base_size - (length // 10)  # Adjust divisor as needed
+    return max(font_size, min_size)  
 
 
 # Flask route
 @app.route('/random_verse', methods=['GET'])
 def random_verse():
     try:
-        bible_verse, reference = get_random_bible_verse()
+        # Get the requested version or default to 'niv'
+        version = request.args.get('version', 'niv')  
+        if version not in ['niv', 'cus']:  # Validate the version
+            return "Invalid version. Please use 'niv' or 'cus'.", 400
+        bible_verse, reference, audio_data = get_random_bible_verse(version)
         image_bytes = get_random_scenic_image()
 
         logo_bytes = get_logo('logo',512,512)
-        audio_logo_bytes = get_logo('audio',980,862)
+        # audio_logo_bytes = get_logo('audio',980,862)
         if image_bytes is None:
             return "Could not fetch scenic image at this time.", 500
             # Select a male voice with an accent
-        for voice in engine.getProperty('voices'):
-            if "David" in voice.name:  # Or any other clearly male voice name
-                engine.setProperty('voice', voice.id)
-                break
+        # for voice in engine.getProperty('voices'):
+        #     if "David" in voice.name:  # Or any other clearly male voice name
+        #         engine.setProperty('voice', voice.id)
+        #         break
          # Generate TTS audio
-        tts = gTTS(bible_verse)
-        audio_bytes_io = BytesIO()
-        tts.write_to_fp(audio_bytes_io)
-        audio_bytes_io.seek(0)
+        # language_code = "en" if version == "niv" else "zh-CN" 
+        # tts = gTTS(bible_verse, lang=language_code)
+        # audio_bytes_io = BytesIO()
+        # tts.write_to_fp(audio_bytes_io)
+        # audio_bytes_io.seek(0)
 
-        combined_image_bytes = overlay_text_on_image(logo_bytes,image_bytes, bible_verse, reference,1080,1920)
+        combined_image_bytes = overlay_text_on_image(version,logo_bytes,image_bytes, bible_verse, reference,1080,1920)
         if combined_image_bytes is None:
             return "Error processing image.", 500    
 
         # Convert audio bytes to base64 string
-        
-        audio_data_base64 = base64.b64encode(audio_bytes_io.getvalue()).decode('utf-8')
-        return render_template('index.html', image_data=base64.b64encode(combined_image_bytes.getvalue()).decode(),audio_data=audio_data_base64)
+        # audio_data_base64 = base64.b64encode(audio_bytes_io.getvalue()).decode('utf-8')
+               # Insert verse into the database
+        # insert_verse(reference, bible_verse, 'niv', audio_data_base64)
+        return render_template('index.html', image_data=base64.b64encode(combined_image_bytes.getvalue()).decode(),audio_data=audio_data)
     except Exception as e:
         logging.error(f"Error in /random_verse endpoint: {e}")
         return "Internal server error.", 500
@@ -265,37 +354,29 @@ def set_male_voice(engine):
             engine.setProperty('voice', voice.id)
             return  # Exit the loop after setting the first male voice
 
-def generate_verse_data():
-    bible_verse, reference = get_random_bible_verse()
-    image_bytes = get_random_scenic_image()
 
-    if image_bytes is None:
-        raise Exception("Could not fetch scenic image.")
+def insert_verse(reference, verse, language, audio_data):
+    conn = sqlite3.connect('bible.db')
+    cursor = conn.cursor()
 
-    logo_bytes = get_logo('logo', 512, 512)
-    audio_logo_bytes = get_logo('audio', 980, 862)
+    try:
+        cursor.execute('''
+            INSERT OR IGNORE INTO verses (reference, verse, language, audio)
+            VALUES (?, ?, ?, ?)
+        ''', (reference, verse, language, audio_data))
 
-    # Text-to-Speech (TTS) generation
-    engine = pyttsx3.init()
-    set_male_voice(engine)  # Attempt to use a male voice
-    audio_bytes_io = BytesIO()
-    engine.save_to_file(bible_verse, audio_bytes_io)
-    audio_bytes_io.seek(0)
-    audio_data_base64 = base64.b64encode(audio_bytes_io.getvalue()).decode('utf-8')
+        conn.commit()
+        if cursor.rowcount > 0:  # Check if a row was actually inserted
+            last_row_id = cursor.lastrowid  # Get the ID of the inserted row
+            logging.info(f"Successfully inserted verse ID {last_row_id}: {reference} ({language})")
+        else:
+            logging.info(f"Verse already exists: {reference} ({language})")
 
-    combined_image_bytes = overlay_text_on_image(
-        audio_logo_bytes, logo_bytes, image_bytes, bible_verse, reference, 1080, 1920
-    )
-
-    if combined_image_bytes is None:
-        raise Exception("Error processing image.")
-
-    return {
-        'image_data': base64.b64encode(combined_image_bytes.getvalue()).decode(),
-        'audio_data': audio_data_base64,
-    }
-
-
+    except sqlite3.Error as e:
+        logging.error(f"Error inserting verse into database: {e}")
+        conn.rollback()  # Rollback the transaction on error
+    finally:
+        conn.close()
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=False)

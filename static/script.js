@@ -1,7 +1,7 @@
 // Define toggleAudio in the global scope
 function toggleAudio() {
-    var audio = document.getElementById('myAudio');
-    var audioButton = document.getElementById('audioButton');
+    const audio = document.getElementById('myAudio');
+    const audioButton = document.getElementById('audioButton');
 
     if (audio.paused) {
         audio.play();
@@ -12,7 +12,13 @@ function toggleAudio() {
     }
 }
 
-// Add the event listener (no need to redefine toggleAudio here)
-document.addEventListener('DOMContentLoaded', function() {
-    // You can do other setup tasks here if needed
+// Add event listeners when the DOM is loaded
+document.addEventListener('DOMContentLoaded', () => {
+    const audio = document.getElementById('myAudio');
+    const audioButton = document.getElementById('audioButton');
+
+    // Event listener for when audio ends
+    audio.addEventListener('ended', () => {
+        audioButton.classList.remove('playing');
+    });
 });
