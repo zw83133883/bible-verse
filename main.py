@@ -1,5 +1,4 @@
-from flask import Flask, send_file,jsonify, render_template,request,g
-import requests
+from flask import Flask,jsonify, render_template,request,g
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from io import BytesIO
@@ -7,12 +6,9 @@ from PIL import Image, ImageDraw, ImageFont
 import logging
 import os
 import textwrap
-from gtts import gTTS
 import random
 import pyttsx3
-from datetime import datetime, timedelta
 import base64
-from bs4 import BeautifulSoup
 import sqlite3
 
 logging.basicConfig(level=logging.INFO)
