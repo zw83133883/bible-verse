@@ -40,10 +40,6 @@ def get_db():
 engine = pyttsx3.init()
 TOP_VERSES_FILE = os.path.join(os.path.dirname(__file__),"top_verses.txt")
 
-def create_app():
-    app = Flask(__name__)
-    return app
-app = create_app()
 
 # Initialize the rate limiter
 limiter = Limiter(
@@ -213,7 +209,7 @@ def overlay_text_on_image(version,logo_bytes, image_bytes, verse, reference, scr
         reference = reference.replace('(web)', '')
         font_file = font_map.get(version.lower(),english_font_file)
         # Font settings
-        font_size = get_font_size(verse,version)
+        font_size = 60
         font = ImageFont.truetype(font_file, font_size)
         line_spacing = 10  # Adjust for desired spacing between lines
         shadow_offset = 2
@@ -298,14 +294,14 @@ def overlay_text_on_image(version,logo_bytes, image_bytes, verse, reference, scr
         logging.error(f"Error overlaying text on image: {e}")
         return None
 
-def get_font_size(text, language, max_size=60, min_size=20):
-    base_size = max_size
-    if language == "cus":  # or any other Chinese language code
-        base_size = 40  # Smaller base size for Chinese
+# def get_font_size(text, language, max_size=60, min_size=20):
+#     base_size = max_size
+#     if language == "cus":  # or any other Chinese language code
+#         base_size = 40  # Smaller base size for Chinese
 
-    length = len(text)
-    font_size = base_size - (length // 10)  # Adjust divisor as needed
-    return max(font_size, min_size)  
+#     length = len(text)
+#     font_size = base_size - (length // 10)  # Adjust divisor as needed
+#     return max(font_size, min_size)  
 
 
 # Flask route
