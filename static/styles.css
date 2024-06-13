@@ -1,0 +1,205 @@
+@font-face {
+    font-family: 'CustomFont';
+    src: url('./fonts/font.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+}
+
+body, html {
+    height: 100%;
+    margin: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    background-size: cover;
+    background-position: center;
+}
+
+.content {
+    padding: 10px; /* Reduce the padding */
+    border-radius: 10px;
+    width: 80%;
+    margin-bottom: 40%;
+}
+
+/* Default Styles for larger screens */
+.verse {
+    order: 0;
+    font-size: 2.5rem;
+    margin-top: 5vh;
+    font-family: 'CustomFont', sans-serif; 
+    word-spacing: 0.2rem;
+    color: white;
+    text-shadow:
+        1px 1px 0 #000,
+        -1px -1px 0 #000,
+        1px -1px 0 #000,
+        -1px 1px 0 #000,
+        1px 1px 0 #000; /* Your original text-shadow values */
+}
+
+/* Play audio button styling */
+.audio-button {
+    order: 1;
+    position: absolute;
+    bottom: 350px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-image: url("./play-button.png");
+    background-size: contain;
+    background-repeat: no-repeat;
+    width: 150px;
+    height: 150px;
+    cursor: pointer;
+    margin-top: 1rem;
+    align-self: flex-end; /* Push to the bottom of the container */
+    background-color: transparent; 
+    border: none;
+    outline: none;
+}
+
+.audio-button:focus {
+    outline: none; /* Remove the focus outline */
+}
+
+.audio-button.playing {
+    background-image: url("./stop.png");
+}
+
+.audio-button:hover {
+    opacity: 0.8;
+}
+
+.reference {
+    font-size: 3rem;   
+    height: auto;       
+    font-weight: bold;
+    font-family: 'CustomFont', sans-serif; 
+    margin: 2rem auto;  
+    text-align: center;
+    color: white;
+    text-shadow:       /* Using the same shadow values as .verse */
+        1px 1px 0 #000,
+        -1px -1px 0 #000,
+        1px -1px 0 #000,
+        -1px 1px 0 #000,
+        1px 1px 0 #000;
+}
+
+.verse-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.social-media-links {
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: rgba(255, 255, 255, 0.0);
+    padding: 5px;
+    width: 100%;
+    text-align: center;
+    border: none;
+    outline: none;
+}
+
+.social-link {
+    display: inline-block;
+    margin: 0 5px;
+    color: #333;
+    font-size: 1px; /* Default icon size */
+}
+
+.social-link img {
+    width: 24px; /* Adjust icon size */
+    height: 24px;
+}
+
+.logo {
+    display: block;
+    margin: 0 auto;
+    width: 100px; /* Adjust width as needed */
+    height: auto;
+    margin-bottom: 10px; /* Add some space between logo and social links */
+}
+
+/* Media Query for smaller screens (e.g., tablets) */
+@media (max-width: 768px) {
+    .audio-button {
+        bottom: 200px; /* Adjust for tablets */
+        width: 100px; /* Adjust as needed */
+        height: 100px; /* Adjust as needed */
+        margin-top: 0.5rem; /* Adjust for tablets */
+    }
+
+    .verse {
+        font-size: 1.8rem;
+        margin-top: 2vh;
+        word-spacing: 0.1rem;
+    }
+
+    .reference {
+        font-size: 2.5rem;
+        margin: 1.5rem auto;
+    }
+
+    .social-link img {
+        width: 20px; /* Smaller icon size for tablets */
+        height: 20px;
+    }
+
+    .social-media-links {
+        padding: 4px; /* Slightly reduce padding */
+    }
+
+    .social-link {
+        font-size: 18px; /* Smaller icon size for tablets */
+        margin: 0 4px;  /* Reduce margin between icons */
+    }
+    .logo {
+        width: 100px; /* Adjust width for tablets */
+        margin-bottom: 8px; /* Adjust margin for tablets */
+    }
+}
+
+/* Media Query for phones and smaller screens */
+@media (max-width: 480px) {
+    .audio-button {
+        bottom: 150px; /* Adjust for phones */
+        width: 75px; /* Adjust as needed */
+        height: 75px; /* Adjust as needed */
+        margin-top: 0.25rem; /* Adjust for phones */
+    }
+
+    .verse {
+        font-size: 1.5rem; 
+        margin-top: 1vh;  
+        word-spacing: 0.05em; 
+    }
+
+    .reference {
+        font-size: 2rem; 
+        margin: 1rem auto; 
+    }
+
+    .social-link img {
+        width: 18px; /* Even smaller icon size for phones */
+        height: 18px;
+    }
+
+    .social-media-links {
+        padding: 3px;
+    }
+
+    .social-link {
+        font-size: 16px; /* Even smaller icon size for phones */
+        margin: 0 3px;
+    }
+    .logo {
+        width: 60px; /* Adjust width for phones */
+        margin-bottom: 6px; /* Adjust margin for phones */
+    }
+}

@@ -1,67 +1,27 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Daily Bible Verse</title>
-    <style>
-        /* Overall body styling */
-        html,body {
-            display: flex; /* Use flexbox for easy centering */
-            justify-content: center;
-            align-items: center;
-            background-color: #f0f0f0; /* Light background for better contrast */
-            font-family: sans-serif;
-            width: 100dvw;
-            height: 100dvh;
-            max-width: 100dvw;
-            max-height: 100dvh;
-        }
-
-        /* Container for image and button */
-        .container {
-            text-align: center;
-            position: relative; /* Needed for absolute positioning */
-        }
-
-        /* Image styling */
-        .container img {
-            max-width: 100%; /* Make image responsive */
-            height: auto;
-            border-radius: 8px; /* Add rounded corners */
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2); /* Subtle shadow */
-        }
-
-        /* Play audio button styling */
-        .audio-button {
-            position: absolute; /* Position the button absolutely within the container */
-            bottom: 350px;   /* Adjust distance from the bottom */
-            left: 50%;
-            transform: translateX(-50%); 
-            background-image: url("{{ url_for('static', filename='audio.png') }}");
-            background-size: contain;
-            background-repeat: no-repeat;
-            width: 150px; /* Adjust as needed */
-            height: 150px; /* Adjust as needed */
-            cursor: pointer;
-        }
-        .audio-button.playing {
-            background-image: url("{{ url_for('static', filename='pause.png') }}");
-        }
-
-        /* Optional hover effect for the image */
-        .audio-button:hover {
-            opacity: 0.8; /* Slightly reduce opacity on hover */
-        }
-    </style>
-    <script src="{{ url_for('static', filename='script.js') }}"></script> 
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css'>
 </head>
-<body>
-    <div class="container">
-        <img src="data:image/png;base64,{{ image_data }}" alt="Bible Verse Image">
-        <div id="audioButton" class="audio-button" onclick="toggleAudio()"></div> 
+<body style="background-image: url('{{ url_for('static', filename=image_path) }}');">
+    <div class="content">
+        <div class="reference">{{ reference }}</div>
+        <div class="verse-container">
+            <div class="verse">{{ verse }}</div>
+            <button class="audio-button"></button>
+        </div>
     </div>
-    <audio id="myAudio" controls style="display: none;">
-        <source id="audioSource" src="data:audio/mp3;base64,{{ audio_data }}" type="audio/mpeg">
-        Your browser does not support the audio element.
-    </audio>
+    <div class="social-media-links">
+        <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo" class="logo">
+        <a href="https://www.facebook.com/yourpage" target="_blank" class="social-link"><img src="{{ url_for('static', filename='fb.ico') }}" alt="Facebook"></a>
+        <a href="https://twitter.com/yourpage" target="_blank" class="social-link"><img src="{{ url_for('static', filename='twitter.ico') }}" alt="Twitter"></a>
+        <a href="https://www.instagram.com/yourpage" target="_blank" class="social-link"><img src="{{ url_for('static', filename='ins.ico') }}" alt="Instagram"></a>
+        <a href="mailto:echocraftllc@email.com" class="social-link"><img src="{{ url_for('static', filename='email.ico') }}" alt="Email"></a>
+    </div>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>
 </html>
