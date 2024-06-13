@@ -10,6 +10,7 @@ import random
 import pyttsx3
 import base64
 import sqlite3
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 logging.basicConfig(level=logging.INFO)
 # Disable logging for specific libraries
@@ -22,7 +23,7 @@ DATABASE = "bible.db"  # Replace with your database name
 
 
 app = Flask(__name__, static_folder='static', template_folder='templates')
-
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_port=1, x_prefix=1)
 # Add this teardown function to close the database connection after each request
 @app.teardown_appcontext
 def close_connection(exception):
@@ -45,7 +46,7 @@ TOP_VERSES_FILE = os.path.join(os.path.dirname(__file__),"top_verses.txt")
 limiter = Limiter(
     get_remote_address,
     app=app,
-    default_limits=["200 per minute"]  # Adjust the rate limit as needed
+    default_limits=["10 per minute"]  # Adjust the rate limit as needed
 )
 # Custom error message for rate limiting
 @app.errorhandler(429)
