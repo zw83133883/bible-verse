@@ -1,6 +1,7 @@
-from flask import Flask,jsonify, render_template,request,g
+from flask import Flask,jsonify, render_template,request,g,session,redirect,url_for
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
+from flask_caching import Cache
 from io import BytesIO
 from PIL import Image, ImageDraw, ImageFont
 import logging
@@ -23,6 +24,10 @@ DATABASE = "bible.db"  # Replace with your database name
 
 
 app = Flask(__name__, static_folder='static', template_folder='templates')
+cache = Cache(app, config={'CACHE_TYPE': 'simple'}) 
+app.secret_key = os.getenv('SECRET_KEY', 'for dev') 
+# app.config['SESSION_KEY'] = 'c4738e82d8075e896fbb3f5d3d7c7c3fa9fba9dbd0eafc9c'
+# app.config['SESSION_KEY'] = '123'
 app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_port=1, x_prefix=1)
 # Add this teardown function to close the database connection after each request
 @app.teardown_appcontext
@@ -46,14 +51,12 @@ TOP_VERSES_FILE = os.path.join(os.path.dirname(__file__),"top_verses.txt")
 limiter = Limiter(
     get_remote_address,
     app=app,
-    default_limits=["10 per minute"]  # Adjust the rate limit as needed
+    default_limits=["5 per hour"]  # Adjust the rate limit as needed
 )
 # Custom error message for rate limiting
 @app.errorhandler(429)
 def ratelimit_handler(e):
-    return jsonify({
-        "error": "You have exceeded the request limit. Please try again later."
-    }), 429
+    return redirect(url_for('cached_route')) 
 
 
 english_font_file = os.path.join(os.path.dirname(__file__), 'font', "font.ttf")
@@ -153,9 +156,20 @@ def get_random_scenic_image():
 def styles():
     return app.send_static_file('styles.css')
 
+# Decorator to protect routes
+def session_key_required(f):
+    def decorated_function(*args, **kwargs):
+        session_key = request.args.get('session_key')
+        if session_key != app.secret_key:
+            return jsonify({"msg": "Session key is missing or invalid"}), 401
+        return f(*args, **kwargs)
+    decorated_function.__name__ = f.__name__
+    return decorated_function
 
 # Flask route
 @app.route('/random_verse', methods=['GET'])
+@limiter.limit("2 per day")
+@session_key_required
 def random_verse():
     try:
         # Get the requested version or default to 'niv'
@@ -165,11 +179,44 @@ def random_verse():
         bible_verse, reference = get_random_bible_verse(version)
         image_path = get_random_scenic_image()
 
-        return render_template('index.html', verse=bible_verse, reference=reference, image_path=image_path)
+        # Store in session for caching
+        session['verse'] = bible_verse
+        session['reference'] = reference
+        session['image_path'] = image_path
+        
+        # return redirect(url_for('new_route', verse=bible_verse, reference=reference, image_path=image_path))
+        return redirect(url_for('new_route')) 
     except Exception as e:
         logging.error(f"Error in /random_verse endpoint: {e}")
         return "Internal server error.", 500
+
+@app.route('/bible_verse', methods=['GET'])
+@limiter.limit("30 per day")
+def new_route():
+    try:
+        bible_verse = session.get('verse', '')
+        reference = session.get('reference', '')
+        image_path = session.get('image_path', '')
+
+        # #return render_template('index.html', verse=cached_data['verse'], reference=cached_data['reference'], image_path=cached_data['image_path'])
+        return render_template('index.html', verse=bible_verse, reference=reference, image_path=image_path)
+    except Exception as e:
+        logging.error(f"Error in /bible_verse endpoint: {e}")
+        return "Internal server error.", 500
     
+@app.route('/verse', methods=['GET'])
+@limiter.limit("10 per minute")
+def cached_route():
+    try:
+        bible_verse = session.get('verse', '')
+        reference = session.get('reference', '')
+        image_path = session.get('image_path', '')
+
+        # #return render_template('index.html', verse=cached_data['verse'], reference=cached_data['reference'], image_path=cached_data['image_path'])
+        return render_template('index.html', verse=bible_verse, reference=reference, image_path=image_path)
+    except Exception as e:
+        logging.error(f"Error in /verse endpoint: {e}")
+        return "Internal server error.", 500
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=False)
