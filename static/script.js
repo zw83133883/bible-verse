@@ -20,7 +20,6 @@ function handleClickPlayButton() {
     } else {
         speechSynthesis.speak(utterance);
     }
-    console.log(audioPlaying)
 
     audioPlaying = speechSynthesis.speaking;
     if(audioPlaying)
@@ -35,7 +34,9 @@ window.addEventListener('DOMContentLoaded', () => {
         document.querySelector('.audio-button').style.display = 'none';
     }
     const verseText = document.querySelector('.verse').innerText;
-    utterance = new SpeechSynthesisUtterance(verseText);
+    const refText = document.querySelector('.reference').innerText;
+    const text = refText + verseText
+    utterance = new SpeechSynthesisUtterance(text);
     utterance.rate = 1;
 
     utterance.addEventListener('start', handleAudioStart);

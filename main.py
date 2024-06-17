@@ -11,6 +11,7 @@ import random
 import pyttsx3
 import base64
 import sqlite3
+import uuid
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 logging.basicConfig(level=logging.INFO)
@@ -25,9 +26,8 @@ DATABASE = "bible.db"  # Replace with your database name
 
 app = Flask(__name__, static_folder='static', template_folder='templates')
 cache = Cache(app, config={'CACHE_TYPE': 'simple'}) 
+print(os.environ) 
 app.secret_key = os.getenv('SECRET_KEY', 'for dev') 
-# app.config['SESSION_KEY'] = 'c4738e82d8075e896fbb3f5d3d7c7c3fa9fba9dbd0eafc9c'
-# app.config['SESSION_KEY'] = '123'
 app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_port=1, x_prefix=1)
 # Add this teardown function to close the database connection after each request
 @app.teardown_appcontext
@@ -44,7 +44,6 @@ def get_db():
     return db
 
 engine = pyttsx3.init()
-TOP_VERSES_FILE = os.path.join(os.path.dirname(__file__),"top_verses.txt")
 
 
 # Initialize the rate limiter
@@ -56,7 +55,10 @@ limiter = Limiter(
 # Custom error message for rate limiting
 @app.errorhandler(429)
 def ratelimit_handler(e):
-    return redirect(url_for('cached_route')) 
+        verse = session.get('verse', '')
+        reference = session.get('reference', '')
+        unique_path = session.get('unique_path', '')
+        return redirect(url_for('bible_verse', verse=verse, reference=reference, path=unique_path))
 
 
 english_font_file = os.path.join(os.path.dirname(__file__), 'font', "font.ttf")
@@ -72,43 +74,6 @@ def load_verses(file_path):
         logging.error(f"Error loading verses: {e}")
         return []
 
-# Load the verses once at the start
-VERSUS = load_verses(TOP_VERSES_FILE)
-
-# def get_random_bible_verse(version='niv'):
-#     if not VERSUS:
-#         logging.warning("No verses available.")  # Log a warning instead of returning a tuple
-#         return None, None  # Return None for both verse and reference if no verses
-
-#     random_verse = random.choice(VERSUS)  
-#     # Split the book from the chapter/verse, accounting for multi-word book names with numbers
-#     words = random_verse.split(" ")
-#     if words[0].isdigit():
-#         book = " ".join(words[:2]) 
-#         reference = words[2]      
-#     else:
-#         book = words[0]
-#         reference = words[1]
-
-#     url = f"http://ibibles.net/quote.php?{version}-{book.replace(' ', '')}/{reference}"
-#     print(f"Fetching verse from URL: {url}")  # Print the URL
-#     response = requests.get(url)
-#     if response.status_code == 200:
-#         soup = BeautifulSoup(response.text, 'html.parser')
-#         timestamp_element = soup.find('small')
-
-#         if timestamp_element:  # Check if timestamp element is found
-#             verse_text = timestamp_element.next_sibling.strip()
-#             verse_text = verse_text.split(" (")[0]  # Remove reference
-#             return verse_text, random_verse  # Return the verse text and reference
-#         else:
-#             print(f"Fetching verse from URL: {url}")
-#             logging.error("Timestamp element not found in HTML response.")  # Log the error
-#     else:
-#         logging.error(f"Error fetching Bible verse: {response.status_code}")  # Log the error
-
-#     return None, None  # Return None if verse retrieval or parsing fails
-# Function to get a random Bible verse from the database
 
 def get_random_bible_verse(version='niv'):
     try:
@@ -166,6 +131,10 @@ def session_key_required(f):
     decorated_function.__name__ = f.__name__
     return decorated_function
 
+def generate_unique_path():
+    # You can use a library like `uuid` or `secrets` to generate a secure random string
+    return str(uuid.uuid4())
+
 # Flask route
 @app.route('/random_verse', methods=['GET'])
 @limiter.limit("2 per day")
@@ -183,39 +152,35 @@ def random_verse():
         session['verse'] = bible_verse
         session['reference'] = reference
         session['image_path'] = image_path
+        unique_path = generate_unique_path()
+        session['unique_path'] = unique_path
         
-        # return redirect(url_for('new_route', verse=bible_verse, reference=reference, image_path=image_path))
-        return redirect(url_for('new_route')) 
+        return redirect(url_for('bible_verse', verse=bible_verse, reference=reference, path=unique_path))
+        # return redirect(url_for('bible_verse', path=unique_path)) 
     except Exception as e:
         logging.error(f"Error in /random_verse endpoint: {e}")
         return "Internal server error.", 500
 
-@app.route('/bible_verse', methods=['GET'])
+@app.route('/bible_verse/<path:path>', methods=['GET'])
 @limiter.limit("30 per day")
-def new_route():
+def bible_verse(path):
     try:
-        bible_verse = session.get('verse', '')
-        reference = session.get('reference', '')
-        image_path = session.get('image_path', '')
+        # bible_verse = session.get('verse', '')
+        # reference = session.get('reference', '')
+        # image_path = session.get('image_path', '')
 
-        # #return render_template('index.html', verse=cached_data['verse'], reference=cached_data['reference'], image_path=cached_data['image_path'])
-        return render_template('index.html', verse=bible_verse, reference=reference, image_path=image_path)
+        # # #return render_template('index.html', verse=cached_data['verse'], reference=cached_data['reference'], image_path=cached_data['image_path'])
+        # return render_template('index.html', verse=bible_verse, reference=reference, image_path=image_path)
+                # Retrieve data from session if the path matches
+        if session.get('unique_path') == path:
+            verse = session.get('verse', '')
+            reference = session.get('reference', '')
+            image_path = session.get('image_path', '')
+            return render_template('index.html', verse=verse, reference=reference, image_path=image_path)
+        else:
+            return render_template(['rate_limit_error.html'])
     except Exception as e:
         logging.error(f"Error in /bible_verse endpoint: {e}")
-        return "Internal server error.", 500
-    
-@app.route('/verse', methods=['GET'])
-@limiter.limit("10 per minute")
-def cached_route():
-    try:
-        bible_verse = session.get('verse', '')
-        reference = session.get('reference', '')
-        image_path = session.get('image_path', '')
-
-        # #return render_template('index.html', verse=cached_data['verse'], reference=cached_data['reference'], image_path=cached_data['image_path'])
-        return render_template('index.html', verse=bible_verse, reference=reference, image_path=image_path)
-    except Exception as e:
-        logging.error(f"Error in /verse endpoint: {e}")
         return "Internal server error.", 500
 
 if __name__ == '__main__':
