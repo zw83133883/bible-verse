@@ -1,25 +1,27 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>ERROR 400 - INVALID REQUEST</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            text-align: center;
-            margin-top: 50px;
-        }
-        h1 {
-            font-size: 48px;
-            color: #ff0000;
-        }
-        p {
-            font-size: 24px;
-            color: #555555;
-        }
-    </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daily Bible Verse@Rancilili</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css'>
 </head>
-<body>
-    <h1>400 invalid Request</h1>
-    <p>You have entered a invalid request. Please try again.</p>
+<body style="background-image: url('{{ url_for('static', filename=image_path) }}');">
+    <div class="content">
+        <div class="reference">{{ reference }}</div>
+        <div class="verse-container">
+            <div class="verse">{{ verse }}</div>
+            <button class="audio-button"></button>
+        </div>
+    </div>
+    <div class="social-media-links">
+        <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo" class="logo">
+        <a href="https://www.facebook.com/yourpage" target="_blank" class="social-link"><img src="{{ url_for('static', filename='fb.ico') }}" alt="Facebook"></a>
+        <a href="https://twitter.com/yourpage" target="_blank" class="social-link"><img src="{{ url_for('static', filename='twitter.ico') }}" alt="Twitter"></a>
+        <a href="https://www.instagram.com/rancilili_official/" target="_blank" class="social-link"><img src="{{ url_for('static', filename='ins.ico') }}" alt="Instagram"></a>
+        <a href="mailto:echocraftllc@email.com" class="social-link"><img src="{{ url_for('static', filename='email.ico') }}" alt="Email"></a>
+    </div>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>
 </html>

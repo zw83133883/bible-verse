@@ -1,18 +1,18 @@
-from flask import Flask,jsonify, render_template,request,g,session,redirect,url_for
+from flask import Flask,jsonify, render_template,request,g,redirect,url_for
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_caching import Cache
-from io import BytesIO
-from PIL import Image, ImageDraw, ImageFont
 import logging
 import os
-import textwrap
 import random
-import pyttsx3
-import base64
 import sqlite3
 import uuid
 from werkzeug.middleware.proxy_fix import ProxyFix
+import pytz
+from datetime import datetime
+import schedule
+import time
+import threading
 
 logging.basicConfig(level=logging.INFO)
 # Disable logging for specific libraries
@@ -21,13 +21,15 @@ logging.getLogger('pyttsx3').setLevel(logging.ERROR)
 logging.getLogger("gtts").setLevel(logging.ERROR)
 logging.getLogger("urllib3").setLevel(logging.ERROR)
 logging.getLogger("PIL").setLevel(logging.ERROR)
-DATABASE = "bible.db"  # Replace with your database name
+
+DATABASE = "bible.db"
 
 
 app = Flask(__name__, static_folder='static', template_folder='templates')
 cache = Cache(app, config={'CACHE_TYPE': 'simple'}) 
 print(os.environ) 
-app.secret_key = os.getenv('SECRET_KEY', 'for dev') 
+# app.secret_key = os.getenv('SECRET_KEY', 'for dev')
+app.secret_key = 'c4738e82d8075e896fbb3f5d3d7c7c3fa9fba9dbd0eafc9c'
 app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_port=1, x_prefix=1)
 # Add this teardown function to close the database connection after each request
 @app.teardown_appcontext
@@ -35,16 +37,24 @@ def close_connection(exception):
     db = getattr(g, '_database', None)
     if db is not None:
         db.close()
+
+
+# Function to clear the database table
+def clear_database_table():
+    conn = sqlite3.connect('bible.db')
+    cursor = conn.cursor()
+    cursor.execute('DELETE FROM cached_verses')
+    conn.commit()
+    conn.close()
+    logging.info("Database table cleared.")
         
+schedule.every().day.at("00:00").do(clear_database_table)
 
 def get_db():
     db = getattr(g, '_database', None)
     if db is None:
         db = g._database = sqlite3.connect(DATABASE)
     return db
-
-engine = pyttsx3.init()
-
 
 # Initialize the rate limiter
 limiter = Limiter(
@@ -55,10 +65,7 @@ limiter = Limiter(
 # Custom error message for rate limiting
 @app.errorhandler(429)
 def ratelimit_handler(e):
-        verse = session.get('verse', '')
-        reference = session.get('reference', '')
-        unique_path = session.get('unique_path', '')
-        return redirect(url_for('bible_verse', verse=verse, reference=reference, path=unique_path))
+    return redirect(url_for('error'))
 
 
 english_font_file = os.path.join(os.path.dirname(__file__), 'font', "font.ttf")
@@ -98,7 +105,6 @@ def get_random_bible_verse(version='niv'):
         conn.close()
 
         if verse_data:
-            print(verse_data)
             reference, verse_text = verse_data
             return verse_text, reference
 
@@ -118,6 +124,7 @@ def get_random_scenic_image():
         return None
 
 @app.route('/static/styles.css')
+@limiter.limit("100 per day")
 def styles():
     return app.send_static_file('styles.css')
 
@@ -137,7 +144,7 @@ def generate_unique_path():
 
 # Flask route
 @app.route('/random_verse', methods=['GET'])
-@limiter.limit("2 per day")
+@limiter.limit("10 per day")
 @session_key_required
 def random_verse():
     try:
@@ -148,40 +155,137 @@ def random_verse():
         bible_verse, reference = get_random_bible_verse(version)
         image_path = get_random_scenic_image()
 
-        # Store in session for caching
-        session['verse'] = bible_verse
-        session['reference'] = reference
-        session['image_path'] = image_path
-        unique_path = generate_unique_path()
-        session['unique_path'] = unique_path
-        
-        return redirect(url_for('bible_verse', verse=bible_verse, reference=reference, path=unique_path))
+        user_ip = request.remote_addr
+        result = cache_verse(user_ip, reference, bible_verse, version,image_path)
+        print(result)
+        if result:
+            cached_reference,cached_verse, cached_language, cached_image_path,*_ = result
+            return redirect(url_for('bible_verse', verse=cached_verse, reference=cached_reference,image_path=cached_image_path))
         # return redirect(url_for('bible_verse', path=unique_path)) 
     except Exception as e:
         logging.error(f"Error in /random_verse endpoint: {e}")
         return "Internal server error.", 500
 
-@app.route('/bible_verse/<path:path>', methods=['GET'])
-@limiter.limit("30 per day")
-def bible_verse(path):
+@app.route('/bible_verse', methods=['GET'])
+@limiter.limit("10 per day")
+def bible_verse():
     try:
-        # bible_verse = session.get('verse', '')
-        # reference = session.get('reference', '')
-        # image_path = session.get('image_path', '')
-
-        # # #return render_template('index.html', verse=cached_data['verse'], reference=cached_data['reference'], image_path=cached_data['image_path'])
-        # return render_template('index.html', verse=bible_verse, reference=reference, image_path=image_path)
-                # Retrieve data from session if the path matches
-        if session.get('unique_path') == path:
-            verse = session.get('verse', '')
-            reference = session.get('reference', '')
-            image_path = session.get('image_path', '')
-            return render_template('index.html', verse=verse, reference=reference, image_path=image_path)
-        else:
-            return render_template(['rate_limit_error.html'])
+        # # Get user's IP address
+        # user_ip = request.remote_addr
+        # # Retrieve cached verse from the database
+        # cached_data = get_cached_verse(user_ip)
+        # if cached_data:
+        #     reference, verse, language, image_path = cached_data
+        #     print(cached_data)
+        #     return render_template('index.html', verse=verse, reference=reference, image_path=image_path)
+        # else:
+        #     return render_template('rate_limit_error.html')
+        verse = request.args.get('verse', '')
+        reference = request.args.get('reference', '')
+        image_path = request.args.get('image_path','')
+        return render_template('index.html', verse=verse, reference=reference, image_path=image_path)
     except Exception as e:
         logging.error(f"Error in /bible_verse endpoint: {e}")
         return "Internal server error.", 500
+    
+@app.route('/error', methods=['GET'])
+# @limiter.limit("10 per day")
+@limiter.exempt
+def error():
+    try:
+        reference = "You have Exceeded Amount of Requests for the day"
+        verse = "If you would like to unlock unlimited verses feature please contact our support at echocraftllc@gmail.com"
+        image_path = get_random_scenic_image()
+        return render_template('rate_limit_error.html', verse=verse, reference=reference, image_path=image_path)
+    except Exception as e:
+        logging.error(f"Error in /bible_verse endpoint: {e}")
+        return "Internal server error.", 500
+    
+def cache_verse(ip_address, reference, verse, language, image_path):
+    conn = sqlite3.connect('bible.db')
+    cursor = conn.cursor()
+
+    # Get today's date in the Pacific Time timezone
+    timezone = pytz.timezone('America/Los_Angeles')
+    now = datetime.now(timezone)
+    today = now.strftime('%Y-%m-%d')
+
+    # Check the number of cached verses for the IP address today
+    cursor.execute('''
+        SELECT COUNT(*) FROM cached_verses 
+        WHERE ip_address = ? AND DATE(timestamp) = ?
+    ''', (ip_address, today))
+    count = cursor.fetchone()[0]
+
+    if count < 2:
+        # If there are less than 2 cached verses today, insert the new verse
+        timestamp = now.strftime('%Y-%m-%d %H:%M:%S')
+        cursor.execute('''
+            INSERT INTO cached_verses (ip_address, reference, verse, language, image_path, timestamp, last_sent)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        ''', (ip_address, reference, verse, language, image_path, timestamp, False))
+        conn.commit()
+        conn.close()
+        return reference, verse, language, image_path
+    else:
+        # If there are already 2 cached verses today, select a random existing record
+        cached_data = get_cached_verse(ip_address)
+        conn.close()
+        return cached_data
+
+
+def get_cached_verse(ip_address):
+    conn = sqlite3.connect('bible.db')
+    cursor = conn.cursor()
+
+    # Start a transaction to ensure consistency
+    conn.execute('BEGIN TRANSACTION')
+
+    # Select a verse where last_sent is 0
+    cursor.execute('''
+        SELECT reference, verse, language, image_path FROM cached_verses
+        WHERE ip_address = ? AND last_sent = 0
+        ORDER BY timestamp DESC
+        LIMIT 1
+    ''', (ip_address,))
+    verse = cursor.fetchone()
+    
+    if verse:
+        # Update the selected verse's last_sent to 1
+        cursor.execute('''
+            UPDATE cached_verses
+            SET last_sent = 1
+            WHERE ip_address = ? AND reference = ?
+        ''', (ip_address, verse[0]))
+
+        # Update the remaining records' last_sent to 0
+        cursor.execute('''
+            UPDATE cached_verses
+            SET last_sent = 0
+            WHERE ip_address = ? AND reference != ?
+        ''', (ip_address, verse[0]))
+
+        # Commit the transaction
+        conn.commit()
+    else:
+        # If no verse was found, rollback the transaction
+        conn.rollback()
+
+    conn.close()
+    return verse
+
+# Run the scheduled task in a separate thread
+def run_scheduler():
+    while True:
+        schedule.run_pending()
+        time.sleep(1)
+
+def run_flask():
+    app.run(host='0.0.0.0', port=5000, debug=True)
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=False)
+        # Start the scheduler in a separate thread
+    scheduler_thread = threading.Thread(target=run_scheduler)
+    scheduler_thread.start()
+
+    run_flask()
