@@ -28,8 +28,7 @@ DATABASE = "bible.db"
 app = Flask(__name__, static_folder='static', template_folder='templates')
 cache = Cache(app, config={'CACHE_TYPE': 'simple'}) 
 print(os.environ) 
-# app.secret_key = os.getenv('SECRET_KEY', 'for dev')
-app.secret_key = 'c4738e82d8075e896fbb3f5d3d7c7c3fa9fba9dbd0eafc9c'
+app.secret_key = os.getenv('SECRET_KEY', 'for dev')
 app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_port=1, x_prefix=1)
 # Add this teardown function to close the database connection after each request
 @app.teardown_appcontext
