@@ -2,17 +2,15 @@ from flask import Flask,jsonify, render_template,request,g,redirect,url_for
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_caching import Cache
+from flask_apscheduler import APScheduler
 import logging
 import os
 import random
 import sqlite3
 import uuid
 from werkzeug.middleware.proxy_fix import ProxyFix
-import pytz
-from datetime import datetime
-import schedule
-import time
-import threading
+import tzlocal
+import datetime
 
 logging.basicConfig(level=logging.INFO)
 # Disable logging for specific libraries
@@ -27,7 +25,9 @@ DATABASE = "bible.db"
 
 app = Flask(__name__, static_folder='static', template_folder='templates')
 cache = Cache(app, config={'CACHE_TYPE': 'simple'}) 
-print(os.environ) 
+scheduler = APScheduler()
+scheduler.init_app(app)
+scheduler.start()
 app.secret_key = os.getenv('SECRET_KEY', 'for dev')
 app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_port=1, x_prefix=1)
 # Add this teardown function to close the database connection after each request
@@ -47,7 +47,7 @@ def clear_database_table():
     conn.close()
     logging.info("Database table cleared.")
         
-schedule.every().day.at("00:00").do(clear_database_table)
+
 
 def get_db():
     db = getattr(g, '_database', None)
@@ -156,7 +156,6 @@ def random_verse():
 
         user_ip = request.remote_addr
         result = cache_verse(user_ip, reference, bible_verse, version,image_path)
-        print(result)
         if result:
             cached_reference,cached_verse, cached_language, cached_image_path,*_ = result
             return redirect(url_for('bible_verse', verse=cached_verse, reference=cached_reference,image_path=cached_image_path))
@@ -204,9 +203,9 @@ def cache_verse(ip_address, reference, verse, language, image_path):
     conn = sqlite3.connect('bible.db')
     cursor = conn.cursor()
 
-    # Get today's date in the Pacific Time timezone
-    timezone = pytz.timezone('America/Los_Angeles')
-    now = datetime.now(timezone)
+    # Get the current time in the local timezone
+    now = datetime.datetime.now()
+    # Format the date as 'YYYY-MM-DD'
     today = now.strftime('%Y-%m-%d')
 
     # Check the number of cached verses for the IP address today
@@ -273,18 +272,13 @@ def get_cached_verse(ip_address):
     conn.close()
     return verse
 
-# Run the scheduled task in a separate thread
-def run_scheduler():
-    while True:
-        schedule.run_pending()
-        time.sleep(1)
+@scheduler.task('cron', id='clear_database_task', hour=0, minute=0)
+def scheduled_task():
+    clear_database_table()
 
 def run_flask():
     app.run(host='0.0.0.0', port=5000, debug=True)
 
 if __name__ == '__main__':
-        # Start the scheduler in a separate thread
-    scheduler_thread = threading.Thread(target=run_scheduler)
-    scheduler_thread.start()
 
     run_flask()
