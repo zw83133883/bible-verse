@@ -125,7 +125,16 @@ body, html {
     height: auto;
     margin-bottom: 10px; /* Add some space between logo and social links */
 }
-
+#languageSelect {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  z-index: 10;
+  padding: 5px; /* Adjust padding to your preference */
+  border: 1px solid #ccc; /* Light gray border */
+  border-radius: 4px;
+  font-size: 14px;
+}
 /* Media Query for smaller screens (e.g., tablets) */
 @media (max-width: 768px) {
     .audio-button {
@@ -163,6 +172,14 @@ body, html {
         width: 100px; /* Adjust width for tablets */
         margin-bottom: 8px; /* Adjust margin for tablets */
     }
+    #languageSelect {
+        top: 10px; 
+        right: 10px;
+        /* Force the default appearance on mobile to avoid issues */
+        -webkit-appearance: menulist; 
+        -moz-appearance: menulist;   
+        appearance: menulist;      
+    }
 }
 
 /* Media Query for phones and smaller screens */
@@ -173,7 +190,14 @@ body, html {
         height: 75px; /* Adjust as needed */
         margin-top: 0.25rem; /* Adjust for phones */
     }
-
+    #languageSelect {
+        top: 5px; 
+        right: 5px; 
+        /* Force the default appearance on mobile to avoid issues */
+        -webkit-appearance: menulist; 
+        -moz-appearance: menulist;   
+        appearance: menulist;  
+    }
     .verse {
         font-size: 1.5rem; 
         margin-top: 1vh;  

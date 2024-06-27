@@ -28,7 +28,8 @@ cache = Cache(app, config={'CACHE_TYPE': 'simple'})
 scheduler = APScheduler()
 scheduler.init_app(app)
 scheduler.start()
-app.secret_key = os.getenv('SECRET_KEY', 'for dev')
+# app.secret_key = os.getenv('SECRET_KEY', 'for dev')
+app.secret_key = 'c4738e82d8075e896fbb3f5d3d7c7c3fa9fba9dbd0eafc9c'
 app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_port=1, x_prefix=1)
 # Add this teardown function to close the database connection after each request
 @app.teardown_appcontext
@@ -64,7 +65,10 @@ limiter = Limiter(
 # Custom error message for rate limiting
 @app.errorhandler(429)
 def ratelimit_handler(e):
-    return redirect(url_for('error'))
+    reference = "You have Exceeded Amount of Requests for the day"
+    verse = "If you would like to unlock unlimited verses feature please contact our support at echocraftllc@gmail.com"
+    image_path = get_random_scenic_image()
+    return render_template('rate_limit_error.html', verse=verse, reference=reference, image_path=image_path)
 
 
 english_font_file = os.path.join(os.path.dirname(__file__), 'font', "font.ttf")
@@ -143,7 +147,7 @@ def generate_unique_path():
 
 # Flask route
 @app.route('/random_verse', methods=['GET'])
-@limiter.limit("10 per day")
+@limiter.limit("100 per day")
 @session_key_required
 def random_verse():
     try:
@@ -185,19 +189,7 @@ def bible_verse():
     except Exception as e:
         logging.error(f"Error in /bible_verse endpoint: {e}")
         return "Internal server error.", 500
-    
-@app.route('/error', methods=['GET'])
-# @limiter.limit("10 per day")
-@limiter.exempt
-def error():
-    try:
-        reference = "You have Exceeded Amount of Requests for the day"
-        verse = "If you would like to unlock unlimited verses feature please contact our support at echocraftllc@gmail.com"
-        image_path = get_random_scenic_image()
-        return render_template('rate_limit_error.html', verse=verse, reference=reference, image_path=image_path)
-    except Exception as e:
-        logging.error(f"Error in /bible_verse endpoint: {e}")
-        return "Internal server error.", 500
+
     
 def cache_verse(ip_address, reference, verse, language, image_path):
     conn = sqlite3.connect('bible.db')
