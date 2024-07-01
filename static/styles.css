@@ -176,9 +176,9 @@ body, html {
         top: 10px; 
         right: 10px;
         /* Force the default appearance on mobile to avoid issues */
-        -webkit-appearance: menulist; 
+        /* -webkit-appearance: menulist; 
         -moz-appearance: menulist;   
-        appearance: menulist;      
+        appearance: menulist;       */
     }
 }
 
@@ -194,9 +194,9 @@ body, html {
         top: 5px; 
         right: 5px; 
         /* Force the default appearance on mobile to avoid issues */
-        -webkit-appearance: menulist; 
+        /* -webkit-appearance: menulist; 
         -moz-appearance: menulist;   
-        appearance: menulist;  
+        appearance: menulist;   */
     }
     .verse {
         font-size: 1.5rem; 
