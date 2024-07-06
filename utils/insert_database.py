@@ -2,7 +2,7 @@ import requests
 import time
 
 url = "http://127.0.0.1:5000/random_verse"
-requests_per_minute = 60
+requests_per_minute = 200
 interval_seconds = 60 / requests_per_minute
 
 def make_request():

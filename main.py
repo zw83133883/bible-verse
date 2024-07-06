@@ -10,6 +10,8 @@ import random
 import pyttsx3
 import base64
 import sqlite3
+import requests
+from bs4 import BeautifulSoup
 
 logging.basicConfig(level=logging.INFO)
 # Disable logging for specific libraries
@@ -45,7 +47,7 @@ TOP_VERSES_FILE = os.path.join(os.path.dirname(__file__),"top_verses.txt")
 limiter = Limiter(
     get_remote_address,
     app=app,
-    default_limits=["10 per minute"]  # Adjust the rate limit as needed
+    default_limits=["200 per minute"]  # Adjust the rate limit as needed
 )
 # Custom error message for rate limiting
 @app.errorhandler(429)
@@ -71,70 +73,70 @@ def load_verses(file_path):
 # Load the verses once at the start
 VERSUS = load_verses(TOP_VERSES_FILE)
 
-# def get_random_bible_verse(version='niv'):
-#     if not VERSUS:
-#         logging.warning("No verses available.")  # Log a warning instead of returning a tuple
-#         return None, None  # Return None for both verse and reference if no verses
+def get_random_bible_verse(version='niv'):
+    if not VERSUS:
+        logging.warning("No verses available.")  # Log a warning instead of returning a tuple
+        return None, None  # Return None for both verse and reference if no verses
 
-#     random_verse = random.choice(VERSUS)  
-#     # Split the book from the chapter/verse, accounting for multi-word book names with numbers
-#     words = random_verse.split(" ")
-#     if words[0].isdigit():
-#         book = " ".join(words[:2]) 
-#         reference = words[2]      
-#     else:
-#         book = words[0]
-#         reference = words[1]
+    random_verse = random.choice(VERSUS)  
+    # Split the book from the chapter/verse, accounting for multi-word book names with numbers
+    words = random_verse.split(" ")
+    if words[0].isdigit():
+        book = " ".join(words[:2]) 
+        reference = words[2]      
+    else:
+        book = words[0]
+        reference = words[1]
 
-#     url = f"http://ibibles.net/quote.php?{version}-{book.replace(' ', '')}/{reference}"
-#     print(f"Fetching verse from URL: {url}")  # Print the URL
-#     response = requests.get(url)
-#     if response.status_code == 200:
-#         soup = BeautifulSoup(response.text, 'html.parser')
-#         timestamp_element = soup.find('small')
+    url = f"http://ibibles.net/quote.php?{version}-{book.replace(' ', '')}/{reference}"
+    print(f"Fetching verse from URL: {url}")  # Print the URL
+    response = requests.get(url)
+    if response.status_code == 200:
+        soup = BeautifulSoup(response.text, 'html.parser')
+        timestamp_element = soup.find('small')
 
-#         if timestamp_element:  # Check if timestamp element is found
-#             verse_text = timestamp_element.next_sibling.strip()
-#             verse_text = verse_text.split(" (")[0]  # Remove reference
-#             return verse_text, random_verse  # Return the verse text and reference
-#         else:
-#             print(f"Fetching verse from URL: {url}")
-#             logging.error("Timestamp element not found in HTML response.")  # Log the error
-#     else:
-#         logging.error(f"Error fetching Bible verse: {response.status_code}")  # Log the error
+        if timestamp_element:  # Check if timestamp element is found
+            verse_text = timestamp_element.next_sibling.strip()
+            verse_text = verse_text.split(" (")[0]  # Remove reference
+            return verse_text, random_verse  # Return the verse text and reference
+        else:
+            print(f"Fetching verse from URL: {url}")
+            logging.error("Timestamp element not found in HTML response.")  # Log the error
+    else:
+        logging.error(f"Error fetching Bible verse: {response.status_code}")  # Log the error
 
-#     return None, None  # Return None if verse retrieval or parsing fails
+    return None, None  # Return None if verse retrieval or parsing fails
 # Function to get a random Bible verse from the database
 
-def get_random_bible_verse(version='niv'):
-    try:
-        conn = get_db()
-        cursor = conn.cursor()
+# def get_random_bible_verse(version='niv'):
+#     try:
+#         conn = get_db()
+#         cursor = conn.cursor()
 
-        # Get the total number of verses for the given version
-        cursor.execute("SELECT COUNT(*) FROM verses WHERE language = ?", (version,))
-        total_verses = cursor.fetchone()[0]
+#         # Get the total number of verses for the given version
+#         cursor.execute("SELECT COUNT(*) FROM verses WHERE language = ?", (version,))
+#         total_verses = cursor.fetchone()[0]
 
-        if total_verses == 0:
-            logging.warning(f"No verses found for version: {version}")
-            return None, None
+#         if total_verses == 0:
+#             logging.warning(f"No verses found for version: {version}")
+#             return None, None
 
-        # Generate a random index within the range of available verses
-        random_index = random.randint(0, total_verses - 1)
+#         # Generate a random index within the range of available verses
+#         random_index = random.randint(0, total_verses - 1)
         
-        # Fetch the verse at the random index
-        cursor.execute("SELECT * FROM verses WHERE language = ? LIMIT 1 OFFSET ?", (version, random_index))
-        verse_data = cursor.fetchone()
+#         # Fetch the verse at the random index
+#         cursor.execute("SELECT * FROM verses WHERE language = ? LIMIT 1 OFFSET ?", (version, random_index))
+#         verse_data = cursor.fetchone()
 
-        conn.close()
+#         conn.close()
 
-        if verse_data:
-            _, reference, verse_text, _, audio_data = verse_data 
-            return verse_text, reference, audio_data
+#         if verse_data:
+#             _, reference, verse_text, _, = verse_data 
+#             return verse_text, reference
 
-    except sqlite3.Error as e:
-        logging.error(f"Error fetching Bible verse from database: {e}")
-        return None, None
+#     except sqlite3.Error as e:
+#         logging.error(f"Error fetching Bible verse from database: {e}")
+#         return None, None
 
 
 def get_random_scenic_image():
@@ -312,13 +314,13 @@ def random_verse():
         version = request.args.get('version', 'niv')  
         if version not in ['niv', 'cus']:  # Validate the version
             return "Invalid version. Please use 'niv' or 'cus'.", 400
-        bible_verse, reference, audio_data = get_random_bible_verse(version)
-        image_bytes = get_random_scenic_image()
+        bible_verse, reference = get_random_bible_verse(version)
+        # image_bytes = get_random_scenic_image()
 
-        logo_bytes = get_logo('logo',512,512)
+        # logo_bytes = get_logo('logo',512,512)
         # audio_logo_bytes = get_logo('audio',980,862)
-        if image_bytes is None:
-            return "Could not fetch scenic image at this time.", 500
+        # if image_bytes is None:
+        #     return "Could not fetch scenic image at this time.", 500
             # Select a male voice with an accent
         # for voice in engine.getProperty('voices'):
         #     if "David" in voice.name:  # Or any other clearly male voice name
@@ -331,38 +333,35 @@ def random_verse():
         # tts.write_to_fp(audio_bytes_io)
         # audio_bytes_io.seek(0)
 
-        combined_image_bytes = overlay_text_on_image(version,logo_bytes,image_bytes, bible_verse, reference,1080,1920)
-        if combined_image_bytes is None:
-            return "Error processing image.", 500    
+        # combined_image_bytes = overlay_text_on_image(version,logo_bytes,image_bytes, bible_verse, reference,1080,1920)
+        # if combined_image_bytes is None:
+        #     return "Error processing image.", 500    
 
         # Convert audio bytes to base64 string
         # audio_data_base64 = base64.b64encode(audio_bytes_io.getvalue()).decode('utf-8')
                # Insert verse into the database
-        # insert_verse(reference, bible_verse, 'niv', audio_data_base64)
-        return render_template('index.html', image_data=base64.b64encode(combined_image_bytes.getvalue()).decode(),audio_data=audio_data)
+        insert_verse(reference, bible_verse, 'niv')
+        return render_template('index.html')
+        # return render_template('index.html', image_data=base64.b64encode(combined_image_bytes.getvalue()).decode())
     except Exception as e:
         logging.error(f"Error in /random_verse endpoint: {e}")
         return "Internal server error.", 500
     
-# Helper function to set a male voice (extracted for clarity)
-def set_male_voice(engine):
-    for voice in engine.getProperty('voices'):
-        if voice.gender == 'Male':
-            engine.setProperty('voice', voice.id)
-            return  # Exit the loop after setting the first male voice
-
-
-def insert_verse(reference, verse, language, audio_data):
+def insert_verse(reference, verse, language):
     conn = sqlite3.connect('bible.db')
     cursor = conn.cursor()
 
     try:
+        # Remove the existing verse from top_verses.txt
+        update_top_verses_file(reference)
+
         cursor.execute('''
-            INSERT OR IGNORE INTO verses (reference, verse, language, audio)
-            VALUES (?, ?, ?, ?)
-        ''', (reference, verse, language, audio_data))
+            INSERT OR IGNORE INTO verses (reference, verse, language)
+            VALUES (?, ?, ?)
+        ''', (reference, verse, language))
 
         conn.commit()
+        
         if cursor.rowcount > 0:  # Check if a row was actually inserted
             last_row_id = cursor.lastrowid  # Get the ID of the inserted row
             logging.info(f"Successfully inserted verse ID {last_row_id}: {reference} ({language})")
@@ -375,5 +374,20 @@ def insert_verse(reference, verse, language, audio_data):
     finally:
         conn.close()
 
+
+def update_top_verses_file(inserted_reference):
+    try:
+        # Read all verses from top_verses.txt
+        with open('top_verses.txt', 'r') as file:
+            verses = [line.strip() for line in file if line.strip() != inserted_reference]
+
+        # Write back the filtered verses to top_verses.txt
+        with open('top_verses.txt', 'w') as file:
+            file.write('\n'.join(verses))
+
+        logging.info(f"Updated top_verses.txt file to remove the verse: {inserted_reference}")
+
+    except Exception as e:
+        logging.error(f"Error updating top_verses.txt file: {e}")
 if __name__ == '__main__':
     app.run(debug=False)
