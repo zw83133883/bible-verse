@@ -11,3 +11,8 @@ If you update your firewall rules and want to save the changes, run this command
 
  
 sudo invoke-rc.d iptables-persistent save
+
+
+
+gunicorn -b 0.0.0.0:8000 main:app //local testing
+tail -f /var/log/nginx/access.log //log
