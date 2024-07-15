@@ -68,7 +68,7 @@ def ratelimit_handler(e):
     reference = "You have Exceeded Amount of Requests for the day"
     verse = "If you would like to unlock unlimited verses feature please contact our support at echocraftllc@gmail.com"
     image_path = get_random_scenic_image()
-    return render_template('rate_limit_error.html', verse=verse, reference=reference, image_path=image_path)
+    return render_template('index-multi.html', verse=verse, reference=reference, image_path=image_path)
 
 
 english_font_file = os.path.join(os.path.dirname(__file__), 'font', "font.ttf")
@@ -147,7 +147,7 @@ def generate_unique_path():
 
 # Flask route
 @app.route('/random_verse', methods=['GET'])
-@limiter.limit("10 per day")
+@limiter.limit("50 per day")
 @session_key_required
 def random_verse():
     try:
@@ -169,7 +169,7 @@ def random_verse():
         return "Internal server error.", 500
     
 @app.route('/random_verse_multi_language', methods=['GET'])
-@limiter.limit("10 per day")
+@limiter.limit("50 per day")
 @session_key_required
 def random_verse_multi_language():
     try:
@@ -191,7 +191,7 @@ def random_verse_multi_language():
         return "Internal server error.", 500
 
 @app.route('/bible_verse_multi_language', methods=['GET'])
-@limiter.limit("10 per day")
+@limiter.limit("50 per day")
 def bible_verse_multi_language():
     try:
         verse = request.args.get('verse', '')
@@ -203,7 +203,7 @@ def bible_verse_multi_language():
         return "Internal server error.", 500    
 
 @app.route('/bible_verse', methods=['GET'])
-@limiter.limit("10 per day")
+@limiter.limit("50 per day")
 def bible_verse():
     try:
         # # Get user's IP address

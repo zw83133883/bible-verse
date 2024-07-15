@@ -14,6 +14,7 @@ function populateLanguageDropdownWindows() {
         { code: 'es-MX', name: 'Español (México)' },
         { code: 'zh-CN', name: '中文（简体）' },
         { code: 'zh-HK', name: '中文（香港）' },
+        { code: 'zh-TW', name: '中文（台湾）' }, // Added Chinese (Taiwan)
         { code: 'fr-FR', name: 'Français (France)' },
         { code: 'de-DE', name: 'Deutsch (Deutschland)' },
         { code: 'it-IT', name: 'Italiano (Italia)' },
