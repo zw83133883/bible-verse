@@ -28,8 +28,8 @@ cache = Cache(app, config={'CACHE_TYPE': 'simple'})
 scheduler = APScheduler()
 scheduler.init_app(app)
 scheduler.start()
-# app.secret_key = os.getenv('SECRET_KEY', 'for dev')
-app.secret_key = 'c4738e82d8075e896fbb3f5d3d7c7c3fa9fba9dbd0eafc9c'
+app.secret_key = os.getenv('SECRET_KEY', 'for dev')
+# app.secret_key = 'c4738e82d8075e896fbb3f5d3d7c7c3fa9fba9dbd0eafc9c'
 app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_port=1, x_prefix=1)
 # Add this teardown function to close the database connection after each request
 @app.teardown_appcontext
@@ -147,7 +147,7 @@ def generate_unique_path():
 
 # Flask route
 @app.route('/random_verse', methods=['GET'])
-@limiter.limit("100 per day")
+@limiter.limit("10 per day")
 @session_key_required
 def random_verse():
     try:
@@ -169,7 +169,7 @@ def random_verse():
         return "Internal server error.", 500
     
 @app.route('/random_verse_multi_language', methods=['GET'])
-@limiter.limit("100 per day")
+@limiter.limit("10 per day")
 @session_key_required
 def random_verse_multi_language():
     try:
