@@ -9,9 +9,8 @@ cursor.execute('''
         id INTEGER PRIMARY KEY AUTOINCREMENT, 
         reference TEXT NOT NULL,
         verse TEXT NOT NULL,
-        language TEXT NOT NULL,
-        audio BLOB,
-        UNIQUE(reference, language)
+        type TEXT NOT NULL,
+        UNIQUE(reference)
     )
 ''')
 

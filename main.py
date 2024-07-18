@@ -340,14 +340,14 @@ def random_verse():
         # Convert audio bytes to base64 string
         # audio_data_base64 = base64.b64encode(audio_bytes_io.getvalue()).decode('utf-8')
                # Insert verse into the database
-        insert_verse(reference, bible_verse, 'niv')
+        insert_verse(reference, bible_verse, 'joy')
         return render_template('index.html')
         # return render_template('index.html', image_data=base64.b64encode(combined_image_bytes.getvalue()).decode())
     except Exception as e:
         logging.error(f"Error in /random_verse endpoint: {e}")
         return "Internal server error.", 500
     
-def insert_verse(reference, verse, language):
+def insert_verse(reference, verse, type):
     conn = sqlite3.connect('bible.db')
     cursor = conn.cursor()
 
@@ -356,17 +356,17 @@ def insert_verse(reference, verse, language):
         update_top_verses_file(reference)
 
         cursor.execute('''
-            INSERT OR IGNORE INTO verses (reference, verse, language)
+            INSERT OR IGNORE INTO verses (reference, verse, type)
             VALUES (?, ?, ?)
-        ''', (reference, verse, language))
+        ''', (reference, verse, type))
 
         conn.commit()
         
         if cursor.rowcount > 0:  # Check if a row was actually inserted
             last_row_id = cursor.lastrowid  # Get the ID of the inserted row
-            logging.info(f"Successfully inserted verse ID {last_row_id}: {reference} ({language})")
+            logging.info(f"Successfully inserted verse ID {last_row_id}: {reference} ({type})")
         else:
-            logging.info(f"Verse already exists: {reference} ({language})")
+            logging.info(f"Verse already exists: {reference} ({type})")
 
     except sqlite3.Error as e:
         logging.error(f"Error inserting verse into database: {e}")
