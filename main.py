@@ -28,8 +28,8 @@ cache = Cache(app, config={'CACHE_TYPE': 'simple'})
 scheduler = APScheduler()
 scheduler.init_app(app)
 scheduler.start()
-app.secret_key = os.getenv('SECRET_KEY', 'for dev')
-# app.secret_key = 'c4738e82d8075e896fbb3f5d3d7c7c3fa9fba9dbd0eafc9c'
+# app.secret_key = os.getenv('SECRET_KEY', 'for dev')
+app.secret_key = 'c4738e82d8075e896fbb3f5d3d7c7c3fa9fba9dbd0eafc9c'
 app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_port=1, x_prefix=1)
 # Add this teardown function to close the database connection after each request
 @app.teardown_appcontext
@@ -85,31 +85,31 @@ def load_verses(file_path):
         return []
 
 
-def get_random_bible_verse(version='niv'):
+def get_random_bible_verse():
     try:
         conn = get_db()
         cursor = conn.cursor()
 
-        # Get the total number of verses for the given version
-        cursor.execute("SELECT COUNT(*) FROM verses WHERE language = ?", (version,))
+        # Get the total number of verses
+        cursor.execute("SELECT COUNT(*) FROM verses")
         total_verses = cursor.fetchone()[0]
 
         if total_verses == 0:
-            logging.warning(f"No verses found for version: {version}")
+            logging.warning("No verses found in the database.")
             return None, None
 
         # Generate a random index within the range of available verses
         random_index = random.randint(0, total_verses - 1)
         
         # Fetch the verse at the random index
-        cursor.execute("SELECT reference, verse FROM verses WHERE language = ? LIMIT 1 OFFSET ?", (version, random_index))
+        cursor.execute("SELECT reference, verse, type FROM verses LIMIT 1 OFFSET ?", (random_index,))
         verse_data = cursor.fetchone()
 
         conn.close()
 
         if verse_data:
-            reference, verse_text = verse_data
-            return verse_text, reference
+            reference, verse_text,type = verse_data
+            return verse_text, reference, type
 
     except sqlite3.Error as e:
         logging.error(f"Error fetching Bible verse from database: {e}")
@@ -152,16 +152,16 @@ def generate_unique_path():
 def random_verse():
     try:
         # Get the requested version or default to 'niv'
-        version = request.args.get('version', 'niv')  
-        if version not in ['niv', 'cus']:  # Validate the version
-            return "Invalid version. Please use 'niv' or 'cus'.", 400
-        bible_verse, reference = get_random_bible_verse(version)
+        # version = request.args.get('version', 'niv')  
+        # if version not in ['niv', 'cus']:  # Validate the version
+        #     return "Invalid version. Please use 'niv' or 'cus'.", 400
+        bible_verse, reference,type = get_random_bible_verse()
         image_path = get_random_scenic_image()
 
         user_ip = request.remote_addr
-        result = cache_verse(user_ip, reference, bible_verse, version,image_path)
+        result = cache_verse(user_ip, reference, bible_verse,type, image_path)
         if result:
-            cached_reference,cached_verse, cached_language, cached_image_path,*_ = result
+            cached_reference,cached_verse, cached_type, cached_image_path,*_ = result
             return redirect(url_for('bible_verse', verse=cached_verse, reference=cached_reference,image_path=cached_image_path))
         # return redirect(url_for('bible_verse', path=unique_path)) 
     except Exception as e:
@@ -174,16 +174,16 @@ def random_verse():
 def random_verse_multi_language():
     try:
         # Get the requested version or default to 'niv'
-        version = request.args.get('version', 'niv')  
-        if version not in ['niv', 'cus']:  # Validate the version
-            return "Invalid version. Please use 'niv' or 'cus'.", 400
-        bible_verse, reference = get_random_bible_verse(version)
+        # version = request.args.get('version', 'niv')  
+        # if version not in ['niv', 'cus']:  # Validate the version
+        #     return "Invalid version. Please use 'niv' or 'cus'.", 400
+        bible_verse, reference,type = get_random_bible_verse()
         image_path = get_random_scenic_image()
 
         user_ip = request.remote_addr
-        result = cache_verse(user_ip, reference, bible_verse, version,image_path)
+        result = cache_verse(user_ip, reference, bible_verse,type, image_path)
         if result:
-            cached_reference,cached_verse, cached_language, cached_image_path,*_ = result
+            cached_reference,cached_verse, cached_type, cached_image_path,*_ = result
             return redirect(url_for('bible_verse_multi_language', verse=cached_verse, reference=cached_reference,image_path=cached_image_path))
         # return redirect(url_for('bible_verse', path=unique_path)) 
     except Exception as e:
@@ -225,7 +225,7 @@ def bible_verse():
         return "Internal server error.", 500
 
     
-def cache_verse(ip_address, reference, verse, language, image_path):
+def cache_verse(ip_address, reference,verse,type, image_path):
     conn = sqlite3.connect('bible.db')
     cursor = conn.cursor()
 
@@ -245,12 +245,12 @@ def cache_verse(ip_address, reference, verse, language, image_path):
         # If there are less than 2 cached verses today, insert the new verse
         timestamp = now.strftime('%Y-%m-%d %H:%M:%S')
         cursor.execute('''
-            INSERT INTO cached_verses (ip_address, reference, verse, language, image_path, timestamp, last_sent)
+            INSERT INTO cached_verses (ip_address, reference, verse, type, image_path, timestamp, last_sent)
             VALUES (?, ?, ?, ?, ?, ?, ?)
-        ''', (ip_address, reference, verse, language, image_path, timestamp, False))
+        ''', (ip_address, reference, verse, type, image_path, timestamp, False))
         conn.commit()
         conn.close()
-        return reference, verse, language, image_path
+        return reference, verse, type, image_path
     else:
         # If there are already 2 cached verses today, select a random existing record
         cached_data = get_cached_verse(ip_address)
@@ -267,7 +267,7 @@ def get_cached_verse(ip_address):
 
     # Select a verse where last_sent is 0
     cursor.execute('''
-        SELECT reference, verse, language, image_path FROM cached_verses
+        SELECT reference, verse, type, image_path FROM cached_verses
         WHERE ip_address = ? AND last_sent = 0
         ORDER BY timestamp DESC
         LIMIT 1

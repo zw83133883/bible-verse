@@ -27,7 +27,7 @@ cursor.execute('''
         ip_address TEXT NOT NULL,
         reference TEXT NOT NULL,
         verse TEXT NOT NULL,
-        language TEXT NOT NULL,
+        type TEXT NOT NULL,
         image_path TEXT NOT NULL,
         timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
         last_sent BOOLEAN DEFAULT 0,
