@@ -41,12 +41,14 @@ def close_connection(exception):
 
 # Function to clear the database table
 def clear_database_table():
-    conn = sqlite3.connect('bible.db')
-    cursor = conn.cursor()
-    cursor.execute('DELETE FROM cached_verses')
-    conn.commit()
-    conn.close()
-    logging.info("Database table cleared.")
+    try:
+        with sqlite3.connect('bible.db') as conn:
+            cursor = conn.cursor()
+            cursor.execute('DELETE FROM cached_verses')
+            conn.commit()
+            logging.info("Database table cleared successfully.")
+    except sqlite3.Error as e:
+        logging.error(f"Error clearing the database table: {e}")
         
 
 
