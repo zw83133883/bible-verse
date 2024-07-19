@@ -11,6 +11,7 @@ import uuid
 from werkzeug.middleware.proxy_fix import ProxyFix
 import tzlocal
 import datetime
+import time
 
 logging.basicConfig(level=logging.INFO)
 # Disable logging for specific libraries
@@ -227,37 +228,70 @@ def bible_verse():
         return "Internal server error.", 500
 
     
-def cache_verse(ip_address, reference,verse,type, image_path):
-    conn = sqlite3.connect('bible.db')
-    cursor = conn.cursor()
+def cache_verse(ip_address, reference, verse, type, image_path):
+    retries = 5
+    delay = 1
+    
+    while retries > 0:
+        try:
+            with sqlite3.connect('bible.db', timeout=10) as conn:
+                cursor = conn.cursor()
+                
+                # Get the current time in the local timezone
+                now = datetime.datetime.now()
+                today = now.strftime('%Y-%m-%d')
+                
+                # Check if the verse is already cached for the IP address today
+                cursor.execute('''
+                    SELECT COUNT(*) FROM cached_verses 
+                    WHERE ip_address = ? AND reference = ? AND verse = ?
+                ''', (ip_address, reference, verse))
+                exists = cursor.fetchone()[0] > 0
+                
+                if exists:
+                    cached_data = get_cached_verse(ip_address)
+                    return cached_data
+                
+                # Check the number of cached verses for the IP address today
+                cursor.execute('''
+                    SELECT COUNT(*) FROM cached_verses 
+                    WHERE ip_address = ? AND DATE(timestamp) = ?
+                ''', (ip_address, today))
+                count = cursor.fetchone()[0]
+                
+                if count < 2:
+                    # If there are less than 2 cached verses today, insert the new verse
+                    timestamp = now.strftime('%Y-%m-%d %H:%M:%S')
+                    cursor.execute('''
+                        INSERT INTO cached_verses (ip_address, reference, verse, type, image_path, timestamp, last_sent)
+                        VALUES (?, ?, ?, ?, ?, ?, ?)
+                    ''', (ip_address, reference, verse, type, image_path, timestamp, False))
+                    conn.commit()
+                    return reference, verse, type, image_path
+                else:
+                    # If there are already 2 cached verses today, select a random existing record
+                    cached_data = get_cached_verse(ip_address)
+                    return cached_data
+        except sqlite3.IntegrityError as e:
+            if "UNIQUE constraint failed" in str(e):
+                logging.error("UNIQUE constraint failed, restarting application.")
+                restart_application()
+            else:
+                raise
+        except sqlite3.OperationalError as e:
+            if "database is locked" in str(e):
+                retries -= 1
+                time.sleep(delay)
+            else:
+                raise
+        except Exception as e:
+            raise
 
-    # Get the current time in the local timezone
-    now = datetime.datetime.now()
-    # Format the date as 'YYYY-MM-DD'
-    today = now.strftime('%Y-%m-%d')
+    raise sqlite3.OperationalError("Database is locked and retry attempts exceeded")
 
-    # Check the number of cached verses for the IP address today
-    cursor.execute('''
-        SELECT COUNT(*) FROM cached_verses 
-        WHERE ip_address = ? AND DATE(timestamp) = ?
-    ''', (ip_address, today))
-    count = cursor.fetchone()[0]
-
-    if count < 2:
-        # If there are less than 2 cached verses today, insert the new verse
-        timestamp = now.strftime('%Y-%m-%d %H:%M:%S')
-        cursor.execute('''
-            INSERT INTO cached_verses (ip_address, reference, verse, type, image_path, timestamp, last_sent)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-        ''', (ip_address, reference, verse, type, image_path, timestamp, False))
-        conn.commit()
-        conn.close()
-        return reference, verse, type, image_path
-    else:
-        # If there are already 2 cached verses today, select a random existing record
-        cached_data = get_cached_verse(ip_address)
-        conn.close()
-        return cached_data
+def restart_application():
+    # Ensure any necessary cleanup is done here
+    os.execv(__file__, ['python'] + [__file__])
 
 
 def get_cached_verse(ip_address):
