@@ -165,7 +165,7 @@ def random_verse():
         result = cache_verse(user_ip, reference, bible_verse,type, image_path)
         if result:
             cached_reference,cached_verse, cached_type, cached_image_path,*_ = result
-            return redirect(url_for('bible_verse', verse=cached_verse, reference=cached_reference,image_path=cached_image_path))
+            return redirect(url_for('bible_verse_multi_language', verse=cached_verse, reference=cached_reference,image_path=cached_image_path))
         # return redirect(url_for('bible_verse', path=unique_path)) 
     except Exception as e:
         logging.error(f"Error in /random_verse endpoint: {e}")
@@ -222,7 +222,7 @@ def bible_verse():
         verse = request.args.get('verse', '')
         reference = request.args.get('reference', '')
         image_path = request.args.get('image_path','')
-        return render_template('index.html', verse=verse, reference=reference, image_path=image_path)
+        return render_template('index-multi.html', verse=verse, reference=reference, image_path=image_path)
     except Exception as e:
         logging.error(f"Error in /bible_verse endpoint: {e}")
         return "Internal server error.", 500
