@@ -130,7 +130,7 @@ def get_random_scenic_image():
         return None
 
 @app.route('/static/styles.css')
-@limiter.limit("10 per day")
+@limiter.limit("1000 per day")
 def styles():
     return app.send_static_file('styles.css')
 
@@ -150,7 +150,7 @@ def generate_unique_path():
 
 # Flask route
 @app.route('/random_verse', methods=['GET'])
-@limiter.limit("10 per day")
+@limiter.limit("1000 per day")
 @session_key_required
 def random_verse():
     try:
@@ -172,7 +172,7 @@ def random_verse():
         return "Internal server error.", 500
     
 @app.route('/random_verse_multi_language', methods=['GET'])
-@limiter.limit("10 per day")
+@limiter.limit("1000 per day")
 @session_key_required
 def random_verse_multi_language():
     try:
@@ -194,7 +194,7 @@ def random_verse_multi_language():
         return "Internal server error.", 500
 
 @app.route('/bible_verse_multi_language', methods=['GET'])
-@limiter.limit("10 per day")
+@limiter.limit("1000 per day")
 def bible_verse_multi_language():
     try:
         verse = request.args.get('verse', '')
@@ -206,7 +206,7 @@ def bible_verse_multi_language():
         return "Internal server error.", 500    
 
 @app.route('/bible_verse', methods=['GET'])
-@limiter.limit("10 per day")
+@limiter.limit("1000 per day")
 def bible_verse():
     try:
         # # Get user's IP address
