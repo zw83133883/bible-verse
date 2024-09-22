@@ -19,6 +19,6 @@ def compress_images_in_directory(directory_path, output_directory, quality=85, t
             compress_image(input_path, output_path, quality=quality, target_size=target_size)
 
 if __name__ == "__main__":
-    input_dir = "static/images"
+    input_dir = "static/horoscope-images"
     output_dir = "static/compressed_images"
     compress_images_in_directory(input_dir, output_dir, quality=85, target_size=(1080, 1920))

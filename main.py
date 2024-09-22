@@ -154,10 +154,6 @@ def generate_unique_path():
 @session_key_required
 def random_verse():
     try:
-        # Get the requested version or default to 'niv'
-        # version = request.args.get('version', 'niv')  
-        # if version not in ['niv', 'cus']:  # Validate the version
-        #     return "Invalid version. Please use 'niv' or 'cus'.", 400
         bible_verse, reference,type = get_random_bible_verse()
         image_path = get_random_scenic_image()
 
@@ -171,54 +167,11 @@ def random_verse():
         logging.error(f"Error in /random_verse endpoint: {e}")
         return "Internal server error.", 500
     
-@app.route('/random_verse_multi_language', methods=['GET'])
-@limiter.limit("1000 per day")
-@session_key_required
-def random_verse_multi_language():
-    try:
-        # Get the requested version or default to 'niv'
-        # version = request.args.get('version', 'niv')  
-        # if version not in ['niv', 'cus']:  # Validate the version
-        #     return "Invalid version. Please use 'niv' or 'cus'.", 400
-        bible_verse, reference,type = get_random_bible_verse()
-        image_path = get_random_scenic_image()
-
-        user_ip = request.remote_addr
-        result = cache_verse(user_ip, reference, bible_verse,type, image_path)
-        if result:
-            cached_reference,cached_verse, cached_type, cached_image_path,*_ = result
-            return redirect(url_for('bible_verse_multi_language', verse=cached_verse, reference=cached_reference,image_path=cached_image_path))
-        # return redirect(url_for('bible_verse', path=unique_path)) 
-    except Exception as e:
-        logging.error(f"Error in /random_verse endpoint: {e}")
-        return "Internal server error.", 500
-
-@app.route('/bible_verse_multi_language', methods=['GET'])
-@limiter.limit("1000 per day")
-def bible_verse_multi_language():
-    try:
-        verse = request.args.get('verse', '')
-        reference = request.args.get('reference', '')
-        image_path = request.args.get('image_path','')
-        return render_template('index-multi.html', verse=verse, reference=reference, image_path=image_path)
-    except Exception as e:
-        logging.error(f"Error in /bible_verse endpoint: {e}")
-        return "Internal server error.", 500    
 
 @app.route('/bible_verse', methods=['GET'])
 @limiter.limit("1000 per day")
 def bible_verse():
     try:
-        # # Get user's IP address
-        # user_ip = request.remote_addr
-        # # Retrieve cached verse from the database
-        # cached_data = get_cached_verse(user_ip)
-        # if cached_data:
-        #     reference, verse, language, image_path = cached_data
-        #     print(cached_data)
-        #     return render_template('index.html', verse=verse, reference=reference, image_path=image_path)
-        # else:
-        #     return render_template('rate_limit_error.html')
         verse = request.args.get('verse', '')
         reference = request.args.get('reference', '')
         image_path = request.args.get('image_path','')
@@ -342,5 +295,4 @@ def run_flask():
     app.run(host='0.0.0.0', port=5000, debug=True)
 
 if __name__ == '__main__':
-
     run_flask()
