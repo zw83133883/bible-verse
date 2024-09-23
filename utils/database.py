@@ -36,23 +36,46 @@ cursor = conn.cursor()
 # ''')
 
 cursor.execute('''
-    CREATE TABLE IF NOT EXISTS horoscope_messages (
+    CREATE TABLE IF NOT EXISTS generic_horoscope_messages (
         id INTEGER PRIMARY KEY AUTOINCREMENT, 
         message TEXT NOT NULL,
-        date TEXT NOT NULL,
-        sign TEXT NOT NULL,
-        love_rating INT NOT NULL,
-        career_rating INT NOT NULL,
-        health_rating INT NOT NULL,
-        wealth_rating INT NOT NULL,
-        overall_rating INT NOT NULL,
+        love_rating INT NOT NULL CHECK (love_rating >= 1 AND love_rating <= 5),
+        career_rating INT NOT NULL CHECK (career_rating >= 1 AND career_rating <= 5),
+        health_rating INT NOT NULL CHECK (health_rating >= 1 AND health_rating <= 5),
+        wealth_rating INT NOT NULL CHECK (wealth_rating >= 1 AND wealth_rating <= 5),
+        overall_rating INT NOT NULL CHECK (overall_rating >= 1 AND overall_rating <= 5),
         lucky_color TEXT NOT NULL,
         lucky_number TEXT NOT NULL,
-        matching_signs TEXT NOT NULL,
-        image_path TEXT NOT NULL,
-        UNIQUE(ip_address,verse)
+        matching_sign TEXT NOT NULL,
+        image_path TEXT NOT NULL
     )
 ''')
+
+
+cursor.execute('''
+    CREATE TABLE IF NOT EXISTS daily_horoscope_assignments (
+        id INTEGER PRIMARY KEY AUTOINCREMENT, 
+        date DATE NOT NULL,
+        sign TEXT NOT NULL,
+        message_id INTEGER NOT NULL,
+        FOREIGN KEY (message_id) REFERENCES generic_horoscope_messages (id),
+        UNIQUE (sign, date)
+    )
+''')
+
+# Create the table for tracking IP addresses and access counts
+cursor.execute('''
+    CREATE TABLE IF NOT EXISTS horoscope_ip_access_log (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        ip_address TEXT NOT NULL,
+        access_count INTEGER NOT NULL DEFAULT 1,
+        last_access DATE NOT NULL,
+        UNIQUE (ip_address)
+    )
+''')
+
+
+
 
 conn.commit()  # Save the changes
 conn.close()
