@@ -1,4 +1,4 @@
-from flask import Flask,jsonify, render_template,request,g,redirect,url_for
+from flask import Flask,jsonify, render_template,request,g,redirect,url_for,abort
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_caching import Cache
@@ -12,6 +12,7 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 import tzlocal
 import datetime
 import time
+from datetime import date
 
 logging.basicConfig(level=logging.INFO)
 # Disable logging for specific libraries
@@ -33,23 +34,49 @@ scheduler.start()
 app.secret_key = 'c4738e82d8075e896fbb3f5d3d7c7c3fa9fba9dbd0eafc9c'
 app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_port=1, x_prefix=1)
 # Add this teardown function to close the database connection after each request
-@app.teardown_appcontext
-def close_connection(exception):
-    db = getattr(g, '_database', None)
-    if db is not None:
-        db.close()
+zodiac_signs = ['aries', 'taurus', 'gemini', 'cancer', 'leo', 'virgo', 'libra', 
+                'scorpio', 'sagittarius', 'capricorn', 'aquarius', 'pisces']
 
 
-# Function to clear the database table
 def clear_database_table():
     try:
         with sqlite3.connect('bible.db') as conn:
             cursor = conn.cursor()
+
+            # Clear the cached verses
             cursor.execute('DELETE FROM cached_verses')
+
+            # Clear daily horoscope assignments for today
+            today = date.today().isoformat()
+            cursor.execute('DELETE FROM daily_horoscope_assignments WHERE date = ?', (today,))
+
+            # Reassign new daily horoscopes
+            shuffle_and_assign_horoscopes(cursor)
+
             conn.commit()
-            logging.info("Database table cleared successfully.")
+            logging.info("Database table cleared and new daily horoscopes assigned successfully.")
     except sqlite3.Error as e:
-        logging.error(f"Error clearing the database table: {e}")
+        logging.error(f"Error clearing the database table and assigning new horoscopes: {e}")
+
+def shuffle_and_assign_horoscopes(cursor):
+    # List of zodiac signs
+    zodiac_signs = ['Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo', 'Libra', 
+                    'Scorpio', 'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces']
+
+    # Fetch all generic horoscope messages (including the image path)
+    cursor.execute('SELECT id FROM generic_horoscope_messages')
+    generic_messages = cursor.fetchall()
+
+    # Shuffle the generic messages
+    random.shuffle(generic_messages)
+
+    # Assign shuffled messages to zodiac signs for today
+    for i, sign in enumerate(zodiac_signs):
+        message_id = generic_messages[i % len(generic_messages)][0]  # Handle cases where there are fewer generic messages
+        cursor.execute('''
+            INSERT INTO daily_horoscope_assignments (date, sign, message_id)
+            VALUES (?, ?, ?)
+        ''', (date.today().isoformat(), sign, message_id))
         
 
 
@@ -57,7 +84,14 @@ def get_db():
     db = getattr(g, '_database', None)
     if db is None:
         db = g._database = sqlite3.connect(DATABASE)
+        db.row_factory = sqlite3.Row  # Allows access to rows as dictionaries
     return db
+
+@app.teardown_appcontext
+def close_db(exception):
+    db = getattr(g, '_database', None)
+    if db is not None:
+        db.close()
 
 # Initialize the rate limiter
 limiter = Limiter(
@@ -161,7 +195,7 @@ def random_verse():
         result = cache_verse(user_ip, reference, bible_verse,type, image_path)
         if result:
             cached_reference,cached_verse, cached_type, cached_image_path,*_ = result
-            return redirect(url_for('bible_verse_multi_language', verse=cached_verse, reference=cached_reference,image_path=cached_image_path))
+            return redirect(url_for('bible_verse', verse=cached_verse, reference=cached_reference,image_path=cached_image_path))
         # return redirect(url_for('bible_verse', path=unique_path)) 
     except Exception as e:
         logging.error(f"Error in /random_verse endpoint: {e}")
@@ -179,8 +213,69 @@ def bible_verse():
     except Exception as e:
         logging.error(f"Error in /bible_verse endpoint: {e}")
         return "Internal server error.", 500
-
     
+@app.route('/horoscope/<sign>', methods=['GET'])
+@limiter.limit("1000 per day")
+@session_key_required
+def show_horoscope(sign):
+    sign = sign.lower()  # Convert sign to lowercase to avoid case sensitivity issues
+    if sign not in zodiac_signs:
+        abort(404)  # Return a 404 error if the zodiac sign is not valid
+
+    # Capture the user's IP address
+    user_ip = request.remote_addr
+
+    # Log the user's IP address and update access count
+    log_ip_access(user_ip)
+
+    # Use the get_db() function for the database connection
+    conn = get_db()
+    cursor = conn.cursor()
+
+    # Fetch the horoscope for the specified sign for today
+    today = date.today().isoformat()
+    cursor.execute('''
+        SELECT daily_horoscope_assignments.date, 
+               generic_horoscope_messages.message, 
+               generic_horoscope_messages.love_rating,
+               generic_horoscope_messages.career_rating, 
+               generic_horoscope_messages.health_rating,
+               generic_horoscope_messages.wealth_rating, 
+               generic_horoscope_messages.overall_rating,
+               generic_horoscope_messages.lucky_color, 
+               generic_horoscope_messages.lucky_number,
+               generic_horoscope_messages.matching_sign, 
+               generic_horoscope_messages.image_path
+        FROM daily_horoscope_assignments
+        JOIN generic_horoscope_messages 
+        ON daily_horoscope_assignments.message_id = generic_horoscope_messages.id
+        WHERE daily_horoscope_assignments.date = ? 
+          AND daily_horoscope_assignments.sign = ?
+    ''', (today, sign.capitalize()))
+    
+    horoscope = cursor.fetchone()
+
+    if not horoscope:
+        abort(404)  # Return a 404 error if no horoscope is found
+
+    # Prepare data for the template
+    horoscope_data = {
+        'date': horoscope[0],  # Add the date from the query result
+        'message': horoscope[1],
+        'love_rating': horoscope[2],
+        'career_rating': horoscope[3],
+        'health_rating': horoscope[4],
+        'wealth_rating': horoscope[5],
+        'overall_rating': horoscope[6],
+        'lucky_color': horoscope[7],
+        'lucky_number': horoscope[8],
+        'matching_sign': horoscope[9],
+        'image_path': horoscope[10]  # Make sure to get the correct index
+    }
+
+    # Render the template with dynamic content
+    return render_template('horoscope.html', sign=sign.capitalize(), horoscope_data=horoscope_data)
+
 def cache_verse(ip_address, reference, verse, type, image_path):
     retries = 5
     delay = 1
@@ -246,6 +341,29 @@ def restart_application():
     # Ensure any necessary cleanup is done here
     os.execv(__file__, ['python'] + [__file__])
 
+def log_ip_access(ip_address):
+    # Connect to the database
+    conn = sqlite3.connect('bible.db')
+    cursor = conn.cursor()
+
+    today = date.today().isoformat()
+
+    # Try to update access log if the IP exists
+    cursor.execute('''
+        UPDATE horoscope_ip_access_log
+        SET access_count = access_count + 1, last_access = ?
+        WHERE ip_address = ?
+    ''', (today, ip_address))
+
+    # If no row was updated, insert a new log entry
+    if cursor.rowcount == 0:
+        cursor.execute('''
+            INSERT INTO horoscope_ip_access_log (ip_address, last_access)
+            VALUES (?, ?)
+        ''', (ip_address, today))
+
+    conn.commit()
+    conn.close()
 
 def get_cached_verse(ip_address):
     conn = sqlite3.connect('bible.db')

@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Daily Bible Verse@Rancilili</title>
+    <title>{{ sign }} Daily Horoscope Message@Rancilili</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
     <link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css'>
 </head>
-<body style="background-image: url('{{ url_for('static', filename=image_path) }}');">
+<body style="background-image: url('{{ url_for('static', filename=horoscope_data['image_path']) }}');">
     <div class="content">
         <div class="reference">{{ reference }}</div>
         <div class="verse-container">

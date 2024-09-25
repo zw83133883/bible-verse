@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ sign }} Daily Horoscope Message@Rancilili</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css'>
+</head>
+<body style="background-image: url('{{ url_for('static', filename=horoscope_data.image_path) }}');">
+    <div class="content">
+        <div class="verse-container">
+            <select id="languageSelect"></select> <!-- Language dropdown -->
+
+            <!-- Horoscope Logo -->
+            <div class="horoscope-logo">
+                <img src="{{ url_for('static', filename='horoscope-logo/' + sign + '.png') }}" alt="{{ sign }} Logo" class="logo">
+            </div>
+            <div class="horoscope-date translatable">
+                {{ horoscope_data.date }}
+            </div>
+
+            <!-- Overall Rating -->
+            <div class="rating-group">
+                <div class="overall-rating verse translatable">
+                    <span>Overall Rating: </span>
+                    {% for _ in range(horoscope_data.overall_rating) %}
+                        <img src="{{ url_for('static', filename='star.ico') }}" alt="Star Icon">
+                    {% endfor %}
+                </div>
+
+                <!-- Love Rating -->
+                <div class="ratings-row verse translatable">
+                    <span>Love Rating: </span>
+                    {% for _ in range(horoscope_data.love_rating) %}
+                        <img src="{{ url_for('static', filename='star.ico') }}" alt="Star Icon">
+                    {% endfor %}
+                </div>
+
+                <!-- Career Rating -->
+                <div class="ratings-row verse translatable">
+                    <span>Career Rating: </span>
+                    {% for _ in range(horoscope_data.career_rating) %}
+                        <img src="{{ url_for('static', filename='star.ico') }}" alt="Star Icon">
+                    {% endfor %}
+                </div>
+
+                <!-- Health Rating -->
+                <div class="ratings-row verse translatable">
+                    <span>Health Rating: </span>
+                    {% for _ in range(horoscope_data.health_rating) %}
+                        <img src="{{ url_for('static', filename='star.ico') }}" alt="Star Icon">
+                    {% endfor %}
+                </div>
+
+                <!-- Wealth Rating -->
+                <div class="ratings-row verse translatable">
+                    <span>Wealth Rating: </span>
+                    {% for _ in range(horoscope_data.wealth_rating) %}
+                        <img src="{{ url_for('static', filename='star.ico') }}" alt="Star Icon">
+                    {% endfor %}
+                </div>
+
+                <!-- Lucky Color, Lucky Number, Matching Sign -->
+                <div class="lucky-info verse translatable">
+                    <div>Lucky Color: {{ horoscope_data.lucky_color }}</div>
+                    <div>Lucky Number: {{ horoscope_data.lucky_number }}</div>
+                    <div>Matching Sign: {{ horoscope_data.matching_sign }}</div>
+                </div>
+            </div>
+
+            <!-- Horoscope Message -->
+            <div class="verse translatable">{{ horoscope_data.message }}</div>
+        </div>
+    </div>
+
+    <div class="social-media-links">
+        <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo" class="logo">
+        <a href="https://www.facebook.com/profile.php?id=61560670367223" target="_blank" class="social-link">
+            <img src="{{ url_for('static', filename='fb.ico') }}" alt="Facebook">
+        </a>
+        <a href="https://x.com/Rancilili" target="_blank" class="social-link">
+            <img src="{{ url_for('static', filename='twitter.ico') }}" alt="Twitter">
+        </a>
+        <a href="https://www.instagram.com/rancilili_official/" target="_blank" class="social-link">
+            <img src="{{ url_for('static', filename='ins.ico') }}" alt="Instagram">
+        </a>
+        <a href="mailto:echocraftllc@email.com" class="social-link">
+            <img src="{{ url_for('static', filename='email.ico') }}" alt="Email">
+        </a>
+    </div>
+    
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
