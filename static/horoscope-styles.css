@@ -1,0 +1,171 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Arial', sans-serif;
+}
+
+body {
+    background-color: #f9f9f9;
+}
+
+.horoscope-container {
+    max-width: 400px;
+    margin: 0 auto;
+    padding: 20px;
+    background-color: #fff;
+    border-radius: 10px;
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+.header {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.header img {
+    width: 80px;
+    height: 80px;
+}
+
+.header h1 {
+    font-size: 1.5rem;
+    margin-top: 10px;
+}
+
+.calendar-container {
+    margin-bottom: 20px;
+    overflow-x: auto;
+    white-space: nowrap;
+    padding: 10px;
+    border-bottom: 1px solid #ddd;
+}
+
+.scroll-calendar {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.calendar-item {
+    padding: 10px 20px;
+    border: none;
+    background-color: #f2f2f2;
+    color: #333;
+    border-radius: 5px;
+    cursor: pointer;
+    white-space: nowrap;
+    text-decoration: none;
+    transition: background-color 0.3s ease;  /* Smooth hover transition */
+}
+
+/* .calendar-item:hover {
+    background-color: #e0e0e0;  /* Light hover effect */
+} */
+
+.calendar-item.active {
+    background-color: #007bff;  /* Highlight color (Bootstrap blue) */
+    color: white;               /* Text color change */
+    font-weight: bold;          /* Make text bold */
+    border-radius: 5px;
+}
+
+.highlighted {
+    background-color: #f39c12;
+    color: #fff;
+}
+
+.calendar-item:hover {
+    background-color: #f39c12;
+    color: #fff;
+}
+
+.date-container {
+    text-align: center;
+    margin-bottom: 15px;
+}
+
+.date {
+    font-size: 1.2rem;
+    color: #555;
+}
+
+.rating-container {
+    background-color: #f2f2f2;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+.overall-rating {
+    text-align: center;
+    margin-bottom: 15px;
+}
+
+.rating-title {
+    font-size: 1rem;
+    margin-bottom: 5px;
+    text-align: center; /* Center the labels */
+}
+
+.stars i {
+    color: #f39c12;
+    font-size: 1.2rem;
+    margin-right: 2px;
+}
+
+.rating-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+    text-align: center; /* Center the stars and labels inside each grid item */
+}
+
+.lucky-info-container {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 20px;
+}
+
+.lucky-item {
+    width: 32%;
+    text-align: center;
+}
+
+.lucky-title {
+    font-size: 1rem;
+    margin-bottom: 5px;
+}
+
+.lucky-detail {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #333;
+}
+
+.message-container {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.horoscope-message {
+    font-size: 1.2rem;
+    font-style: italic;
+    color: #333;
+}
+
+.social-media-links {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+}
+
+.social-media-links a {
+    font-size: 2rem;
+    color: #555;
+    text-decoration: none;
+}
+
+.social-media-links a:hover {
+    color: #f39c12;
+}

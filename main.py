@@ -12,7 +12,7 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 import tzlocal
 import datetime
 import time
-from datetime import date
+from datetime import date, timedelta
 
 logging.basicConfig(level=logging.INFO)
 # Disable logging for specific libraries
@@ -34,8 +34,6 @@ scheduler.start()
 app.secret_key = 'c4738e82d8075e896fbb3f5d3d7c7c3fa9fba9dbd0eafc9c'
 app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_port=1, x_prefix=1)
 # Add this teardown function to close the database connection after each request
-zodiac_signs = ['aries', 'taurus', 'gemini', 'cancer', 'leo', 'virgo', 'libra', 
-                'scorpio', 'sagittarius', 'capricorn', 'aquarius', 'pisces']
 
 
 def clear_database_table():
@@ -46,38 +44,65 @@ def clear_database_table():
             # Clear the cached verses
             cursor.execute('DELETE FROM cached_verses')
 
-            # Clear daily horoscope assignments for today
-            today = date.today().isoformat()
-            cursor.execute('DELETE FROM daily_horoscope_assignments WHERE date = ?', (today,))
+            # Calculate the dates for yesterday, today, and tomorrow
+            today = date.today()  # Today is 09/26/2024 (for example)
+            yesterday = today - timedelta(days=1)
+            tomorrow = today + timedelta(days=1)
 
-            # Reassign new daily horoscopes
-            shuffle_and_assign_horoscopes(cursor)
+            formatted_yesterday = yesterday.strftime('%m/%d/%Y')
+            formatted_today = today.strftime('%m/%d/%Y')
+            formatted_tomorrow = tomorrow.strftime('%m/%d/%Y')
+
+            cursor.execute('DELETE FROM daily_horoscope_assignments WHERE date = ?', (formatted_yesterday,))
+
+            used_message_ids = {sign: set() for sign in get_zodiac_signs()}  # Track used message IDs for each sign
+            shuffle_and_assign_horoscopes(cursor, formatted_tomorrow, used_message_ids)
 
             conn.commit()
-            logging.info("Database table cleared and new daily horoscopes assigned successfully.")
+            logging.info(f"Deleted yesterday's data ({formatted_yesterday}), reassigned horoscopes for today ({formatted_today}), and generated for tomorrow ({formatted_tomorrow}).")
     except sqlite3.Error as e:
         logging.error(f"Error clearing the database table and assigning new horoscopes: {e}")
 
-def shuffle_and_assign_horoscopes(cursor):
-    # List of zodiac signs
-    zodiac_signs = ['Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo', 'Libra', 
-                    'Scorpio', 'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces']
+def shuffle_and_assign_horoscopes(cursor, target_date, used_message_ids):
+    # Get the list of zodiac signs
+    zodiac_signs = get_zodiac_signs()
 
-    # Fetch all generic horoscope messages (including the image path)
+    # Fetch all generic horoscope messages
     cursor.execute('SELECT id FROM generic_horoscope_messages')
     generic_messages = cursor.fetchall()
+
+    if not generic_messages:
+        logging.error("No generic horoscope messages found.")
+        return
 
     # Shuffle the generic messages
     random.shuffle(generic_messages)
 
-    # Assign shuffled messages to zodiac signs for today
-    for i, sign in enumerate(zodiac_signs):
-        message_id = generic_messages[i % len(generic_messages)][0]  # Handle cases where there are fewer generic messages
+    # Assign shuffled messages to zodiac signs for the target date
+    for sign in zodiac_signs:
+        while True:
+            message_id = random.choice(generic_messages)[0]
+
+            # Ensure the message ID hasn't been used for this specific sign across yesterday, today, or tomorrow
+            if message_id in used_message_ids[sign]:
+                continue  # Skip if the message is already used for this sign
+
+            # Mark the message ID as used for this sign
+            used_message_ids[sign].add(message_id)
+            break
+
+        # Insert the horoscope for the specific date and sign
         cursor.execute('''
             INSERT INTO daily_horoscope_assignments (date, sign, message_id)
             VALUES (?, ?, ?)
-        ''', (date.today().isoformat(), sign, message_id))
-        
+        ''', (target_date, sign, message_id))
+
+    logging.info(f"Assigned unique horoscopes for {target_date}.")
+
+def get_zodiac_signs():
+    return ['Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo', 
+            'Libra', 'Scorpio', 'Sagittarius', 'Capricorn', 
+            'Aquarius', 'Pisces']
 
 
 def get_db():
@@ -216,51 +241,47 @@ def bible_verse():
     
 @app.route('/horoscope/<sign>', methods=['GET'])
 @limiter.limit("1000 per day")
-@session_key_required
-def show_horoscope(sign):
-    sign = sign.lower()  # Convert sign to lowercase to avoid case sensitivity issues
-    if sign not in zodiac_signs:
-        abort(404)  # Return a 404 error if the zodiac sign is not valid
+def render_horoscope_page(sign):
+    # Define the zodiac signs (in lowercase) to match the URL
+    zodiac_signs = ['aries', 'taurus', 'gemini', 'cancer', 'leo', 'virgo', 
+                    'libra', 'scorpio', 'sagittarius', 'capricorn', 
+                    'aquarius', 'pisces']
 
-    # Capture the user's IP address
-    user_ip = request.remote_addr
+    # Validate the zodiac sign
+    if sign.lower() not in zodiac_signs:
+        abort(404)
 
-    # Log the user's IP address and update access count
-    log_ip_access(user_ip)
+    # Fetch "today's" horoscope data
+    today = date.today().strftime('%m/%d/%Y')
 
-    # Use the get_db() function for the database connection
+    # Fetch the horoscope data for today (just like before)
     conn = get_db()
     cursor = conn.cursor()
-
-    # Fetch the horoscope for the specified sign for today
-    today = date.today().isoformat()
     cursor.execute('''
-        SELECT daily_horoscope_assignments.date, 
+        SELECT daily_horoscope_assignments.date,
                generic_horoscope_messages.message, 
                generic_horoscope_messages.love_rating,
-               generic_horoscope_messages.career_rating, 
+               generic_horoscope_messages.career_rating,
                generic_horoscope_messages.health_rating,
-               generic_horoscope_messages.wealth_rating, 
+               generic_horoscope_messages.wealth_rating,
                generic_horoscope_messages.overall_rating,
-               generic_horoscope_messages.lucky_color, 
+               generic_horoscope_messages.lucky_color,
                generic_horoscope_messages.lucky_number,
-               generic_horoscope_messages.matching_sign, 
-               generic_horoscope_messages.image_path
+               generic_horoscope_messages.matching_sign
         FROM daily_horoscope_assignments
         JOIN generic_horoscope_messages 
         ON daily_horoscope_assignments.message_id = generic_horoscope_messages.id
         WHERE daily_horoscope_assignments.date = ? 
           AND daily_horoscope_assignments.sign = ?
     ''', (today, sign.capitalize()))
-    
+
     horoscope = cursor.fetchone()
 
     if not horoscope:
-        abort(404)  # Return a 404 error if no horoscope is found
+        abort(404)
 
-    # Prepare data for the template
     horoscope_data = {
-        'date': horoscope[0],  # Add the date from the query result
+        'date': today,
         'message': horoscope[1],
         'love_rating': horoscope[2],
         'career_rating': horoscope[3],
@@ -269,12 +290,81 @@ def show_horoscope(sign):
         'overall_rating': horoscope[6],
         'lucky_color': horoscope[7],
         'lucky_number': horoscope[8],
-        'matching_sign': horoscope[9],
-        'image_path': horoscope[10]  # Make sure to get the correct index
+        'matching_sign': horoscope[9]
     }
 
-    # Render the template with dynamic content
+    # Render the HTML page with today's horoscope data
     return render_template('horoscope.html', sign=sign.capitalize(), horoscope_data=horoscope_data)
+
+@app.route('/horoscope/<sign>/<day>', methods=['GET'])
+@limiter.limit("1000 per day")
+def show_horoscope(sign, day):
+    # Convert sign to lowercase to avoid case sensitivity issues
+    sign = sign.lower()
+
+    # Define the zodiac signs (in lowercase) to match the URL
+    zodiac_signs = ['aries', 'taurus', 'gemini', 'cancer', 'leo', 'virgo', 
+                    'libra', 'scorpio', 'sagittarius', 'capricorn', 
+                    'aquarius', 'pisces']
+
+    # Validate the zodiac sign
+    if sign not in zodiac_signs:
+        abort(404)  # If the sign is invalid, return a 404 error
+
+    # Determine the date based on the 'day' parameter
+    if day == 'yesterday':
+        target_date = date.today() - timedelta(days=1)
+    elif day == 'tomorrow':
+        target_date = date.today() + timedelta(days=1)
+    else:
+        target_date = date.today()
+
+    # Format the date as mm/dd/yyyy
+    formatted_date = target_date.strftime('%m/%d/%Y')
+
+    # Fetch the horoscope for the sign and the target date
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute('''
+        SELECT daily_horoscope_assignments.date,
+               generic_horoscope_messages.message, 
+               generic_horoscope_messages.love_rating,
+               generic_horoscope_messages.career_rating,
+               generic_horoscope_messages.health_rating,
+               generic_horoscope_messages.wealth_rating,
+               generic_horoscope_messages.overall_rating,
+               generic_horoscope_messages.lucky_color,
+               generic_horoscope_messages.lucky_number,
+               generic_horoscope_messages.matching_sign
+        FROM daily_horoscope_assignments
+        JOIN generic_horoscope_messages 
+        ON daily_horoscope_assignments.message_id = generic_horoscope_messages.id
+        WHERE daily_horoscope_assignments.date = ? 
+          AND daily_horoscope_assignments.sign = ?
+    ''', (formatted_date, sign.capitalize()))
+
+    horoscope = cursor.fetchone()
+
+    if not horoscope:
+        abort(404)  # Return 404 if no horoscope is found
+
+    # Prepare the JSON response data
+    horoscope_data = {
+        'date': formatted_date,
+        'message': horoscope[1],
+        'love_rating': horoscope[2],
+        'career_rating': horoscope[3],
+        'health_rating': horoscope[4],
+        'wealth_rating': horoscope[5],
+        'overall_rating': horoscope[6],
+        'lucky_color': horoscope[7],
+        'lucky_number': horoscope[8],
+        'matching_sign': horoscope[9]
+    }
+
+    return jsonify(horoscope_data)
+
+
 
 def cache_verse(ip_address, reference, verse, type, image_path):
     retries = 5

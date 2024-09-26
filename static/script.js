@@ -1,80 +1,70 @@
-const languageSelect = document.getElementById('languageSelect');
+// Function to update the horoscope content on the page
+function updateHoroscope(data) {
+    // Update the date
+    document.querySelector('.date').innerText = data.date;
 
-// Select all elements that need translation
-const elementsToTranslate = document.querySelectorAll('.verse, .horoscope-date, .ratings-row, .lucky-info div');
+    // Update the horoscope message
+    document.querySelector('.horoscope-message').innerText = data.message;
 
-function populateLanguageDropdown() {
-    const languagesToInclude = [
-        { code: 'en-US', name: 'English' },
-        { code: 'es-ES', name: 'Español (España)' },
-        { code: 'zh-CN', name: '中文（简体）' },
-        { code: 'fr-FR', name: 'Français (France)' },
-        { code: 'de-DE', name: 'Deutsch (Deutschland)' },
-        { code: 'it-IT', name: 'Italiano (Italia)' },
-        { code: 'ja-JP', name: '日本語 (日本)' }
-        // Add more languages as needed
-    ];
-
-    // Populate the language dropdown
-    languagesToInclude.forEach(lang => {
-        const option = document.createElement('option');
-        option.value = lang.code;
-        option.textContent = lang.name;
-        languageSelect.add(option);
-    });
-
-    // Set default language to English
-    languageSelect.value = 'en-US';
-}
-
-// Function to translate all text elements
-function translatePageContent(selectedLanguage) {
-    elementsToTranslate.forEach(element => {
-        const originalText = element.innerText; // Get the original text
-        translateVerse(originalText, selectedLanguage) // Translate the text
-            .then(translatedText => {
-                element.innerText = translatedText; // Update the element with the translated text
-            })
-            .catch(error => {
-                console.error('Translation error:', error);
-                element.innerText = originalText; // If translation fails, keep original text
-            });
-    });
-}
-
-// Function to handle language change
-languageSelect.addEventListener('change', () => {
-    const selectedLanguage = languageSelect.value;
-    translatePageContent(selectedLanguage); // Call the translation function for the selected language
-});
-
-// Function to translate text using Google Translate API
-async function translateVerse(text, targetLanguage) {
-    const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${targetLanguage}&dt=t&q=${encodeURIComponent(text)}`;
-    
-    try {
-        const response = await fetch(url);
-        const data = await response.json();
-
-        // Extract and concatenate all translated segments
-        let translatedText = '';
-        if (data && data[0] && data[0].length > 0) {
-            data[0].forEach(segment => {
-                if (segment && segment[0]) {
-                    translatedText += segment[0];
-                }
-            });
-        }
-
-        return translatedText.trim(); // Return the translated text
-    } catch (error) {
-        console.error('Translation error:', error);
-        return text; // Return the original text if translation fails
+    // Update the overall rating stars
+    const overallRatingContainer = document.querySelector('.overall-rating .stars');
+    overallRatingContainer.innerHTML = '';  // Clear current stars
+    for (let i = 0; i < data.overall_rating; i++) {
+        overallRatingContainer.innerHTML += '<i class="fas fa-star"></i>';
     }
+
+    // Update the love rating stars
+    const loveRatingContainer = document.querySelector('.rating-block:nth-child(1) .stars');
+    loveRatingContainer.innerHTML = '';  // Clear current stars
+    for (let i = 0; i < data.love_rating; i++) {
+        loveRatingContainer.innerHTML += '<i class="fas fa-star"></i>';
+    }
+
+    // Update the career rating stars
+    const careerRatingContainer = document.querySelector('.rating-block:nth-child(2) .stars');
+    careerRatingContainer.innerHTML = '';  // Clear current stars
+    for (let i = 0; i < data.career_rating; i++) {
+        careerRatingContainer.innerHTML += '<i class="fas fa-star"></i>';
+    }
+
+    // Update the health rating stars
+    const healthRatingContainer = document.querySelector('.rating-block:nth-child(3) .stars');
+    healthRatingContainer.innerHTML = '';  // Clear current stars
+    for (let i = 0; i < data.health_rating; i++) {
+        healthRatingContainer.innerHTML += '<i class="fas fa-star"></i>';
+    }
+
+    // Update the wealth rating stars
+    const wealthRatingContainer = document.querySelector('.rating-block:nth-child(4) .stars');
+    wealthRatingContainer.innerHTML = '';  // Clear current stars
+    for (let i = 0; i < data.wealth_rating; i++) {
+        wealthRatingContainer.innerHTML += '<i class="fas fa-star"></i>';
+    }
+
+    // Update lucky info
+    document.querySelector('.lucky-info-container .lucky-item:nth-child(1) .lucky-detail').innerText = data.lucky_color;
+    document.querySelector('.lucky-info-container .lucky-item:nth-child(2) .lucky-detail').innerText = data.lucky_number;
+    document.querySelector('.lucky-info-container .lucky-item:nth-child(3) .lucky-detail').innerText = data.matching_sign;
 }
 
+// Event listeners for calendar items
+document.querySelectorAll('.calendar-item').forEach(item => {
+    item.addEventListener('click', function (event) {
+        event.preventDefault();  // Prevent full page reload
 
-// Initialize the dropdown and translations
-window.addEventListener('DOMContentLoaded', () => {
-    populateLanguageDropdown();
+        const url = this.href;  // Get the URL for the selected day
+
+        // Fetch the horoscope data
+        fetch(url)
+            .then(response => response.json())
+            .then(data => {
+                // Update the content with the new horoscope data
+                updateHoroscope(data);
+
+                // Set the active state for the selected day
+                document.querySelectorAll('.calendar-item').forEach(el => el.classList.remove('active'));
+                this.classList.add('active');
+            })
+            .catch(error => console.error('Error fetching horoscope:', error));
+    });
 });
