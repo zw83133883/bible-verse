@@ -16,16 +16,34 @@ body {
     background-color: #fff;
     border-radius: 10px;
     box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+    color: white;
 }
 
 .header {
+    position: relative;
     text-align: center;
-    margin-bottom: 20px;
+    z-index: 1; /* Ensure the header content is in front */
 }
 
+.gif-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0; /* Ensure the GIF is behind */
+    overflow: hidden; /* Hide any excess part of the GIF */
+}
+
+.sign-logo {
+    position: relative;
+    z-index: 2; /* Ensure the logo stays on top of the GIF */
+}
+
+
 .header img {
-    width: 80px;
-    height: 80px;
+    width: 160px;
+    height: 160px;
 }
 
 .header h1 {
@@ -59,24 +77,21 @@ body {
     transition: background-color 0.3s ease;  /* Smooth hover transition */
 }
 
-/* .calendar-item:hover {
-    background-color: #e0e0e0;  /* Light hover effect */
-} */
 
 .calendar-item.active {
-    background-color: #007bff;  /* Highlight color (Bootstrap blue) */
+    background-color: #0088ff;  /* Highlight color (Bootstrap blue) */
     color: white;               /* Text color change */
     font-weight: bold;          /* Make text bold */
     border-radius: 5px;
 }
 
 .highlighted {
-    background-color: #f39c12;
+    background-color: #0088ff;
     color: #fff;
 }
 
 .calendar-item:hover {
-    background-color: #f39c12;
+    background-color: #0088ff;
     color: #fff;
 }
 
@@ -87,14 +102,16 @@ body {
 
 .date {
     font-size: 1.2rem;
-    color: #555;
+    color: #ffffff;
+    text-shadow: 2px 2px 4px #000000; 
 }
 
 .rating-container {
-    background-color: #f2f2f2;
+    background-color: #f8e5e5;
     padding: 15px;
     border-radius: 8px;
     margin-bottom: 20px;
+    color: #f66969;
 }
 
 .overall-rating {
@@ -124,23 +141,66 @@ body {
 .lucky-info-container {
     display: flex;
     justify-content: space-between;
-    margin-bottom: 20px;
+    margin: 20px 0;
 }
 
 .lucky-item {
-    width: 32%;
+    width: 30%;
+    padding: 10px;
+    border-radius: 10px;
     text-align: center;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s;
+    background-color: #f3f3f3; /* Placeholder for background-color */
 }
 
-.lucky-title {
-    font-size: 1rem;
-    margin-bottom: 5px;
+.lucky-item:hover {
+    transform: scale(1.05);
 }
 
-.lucky-detail {
-    font-size: 1.2rem;
+.lucky-circle {
+    width: 70px;
+    height: 70px;
+    margin: 0 auto 10px;
+    background-color: #fff;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
     font-weight: bold;
-    color: #333;
+    color: #333; /* Placeholder for darker text color */
+}
+
+.lucky-label {
+    font-size: 12px;
+    color: #555; /* Placeholder for darker label color */
+    font-weight: bold;
+}
+
+/* Media query for medium screens (between 480px and 768px) */
+@media (max-width: 768px) {
+    .lucky-info-container {
+        justify-content: space-around;
+    }
+
+    .lucky-item {
+        width: 40%;  /* Make the items smaller on medium screens */
+        margin-bottom: 10px;
+    }
+}
+
+/* Media query for smaller screens (less than 480px) */
+@media (max-width: 480px) {
+    .lucky-info-container {
+        justify-content: space-around;
+        gap:15px;
+    }
+
+    .lucky-item {
+        width: 40%;  /* Make the items smaller on medium screens */
+        margin-bottom: 10px;
+    }
 }
 
 .message-container {
@@ -151,7 +211,8 @@ body {
 .horoscope-message {
     font-size: 1.2rem;
     font-style: italic;
-    color: #333;
+    color: #ffffff;
+    text-shadow: 2px 2px 4px #000000; 
 }
 
 .social-media-links {

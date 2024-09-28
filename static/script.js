@@ -1,3 +1,12 @@
+// Function to make a color slightly darker
+function darkenColor(color, percent) {
+    const rgb = color.match(/\d+/g); // Extract the RGB values
+    const r = Math.max(0, Math.min(255, parseInt(rgb[0]) - (255 * percent / 100)));
+    const g = Math.max(0, Math.min(255, parseInt(rgb[1]) - (255 * percent / 100)));
+    const b = Math.max(0, Math.min(255, parseInt(rgb[2]) - (255 * percent / 100)));
+    return `rgb(${r}, ${g}, ${b})`;
+}
+
 // Function to update the horoscope content on the page
 function updateHoroscope(data) {
     // Update the date
@@ -12,8 +21,7 @@ function updateHoroscope(data) {
     for (let i = 0; i < data.overall_rating; i++) {
         overallRatingContainer.innerHTML += '<i class="fas fa-star"></i>';
     }
-
-    // Update the love rating stars
+        // Update the love rating stars
     const loveRatingContainer = document.querySelector('.rating-block:nth-child(1) .stars');
     loveRatingContainer.innerHTML = '';  // Clear current stars
     for (let i = 0; i < data.love_rating; i++) {
@@ -40,11 +48,30 @@ function updateHoroscope(data) {
     for (let i = 0; i < data.wealth_rating; i++) {
         wealthRatingContainer.innerHTML += '<i class="fas fa-star"></i>';
     }
+    
 
-    // Update lucky info
-    document.querySelector('.lucky-info-container .lucky-item:nth-child(1) .lucky-detail').innerText = data.lucky_color;
-    document.querySelector('.lucky-info-container .lucky-item:nth-child(2) .lucky-detail').innerText = data.lucky_number;
-    document.querySelector('.lucky-info-container .lucky-item:nth-child(3) .lucky-detail').innerText = data.matching_sign;
+    // Update lucky info and background colors
+    const luckyColorItem = document.querySelector('.lucky-info-container .lucky-item:nth-child(1)');
+    luckyColorItem.querySelector('.lucky-circle').innerText = data.lucky_color; // Update text inside the circle
+    luckyColorItem.style.backgroundColor = data.lucky_color_rect_color; // Update background color
+    luckyColorItem.querySelector('.lucky-circle').style.color = darkenColor(data.lucky_color_rect_color, 30); // Darken the text color
+    luckyColorItem.querySelector('.lucky-label').style.color = darkenColor(data.lucky_color_rect_color, 30); // Darken the label color
+
+    const luckyNumberItem = document.querySelector('.lucky-info-container .lucky-item:nth-child(2)');
+    luckyNumberItem.querySelector('.lucky-circle').innerText = data.lucky_number; // Update text inside the circle
+    luckyNumberItem.style.backgroundColor = data.lucky_number_rect_color; // Update background color
+    luckyNumberItem.querySelector('.lucky-circle').style.color = darkenColor(data.lucky_number_rect_color, 30); // Darken the text color
+    luckyNumberItem.querySelector('.lucky-label').style.color = darkenColor(data.lucky_number_rect_color, 30); // Darken the label color
+
+    const matchingSignItem = document.querySelector('.lucky-info-container .lucky-item:nth-child(3)');
+    matchingSignItem.querySelector('.lucky-circle').innerText = data.matching_sign; // Update text inside the circle
+    matchingSignItem.style.backgroundColor = data.matching_sign_rect_color; // Update background color
+    matchingSignItem.querySelector('.lucky-circle').style.color = darkenColor(data.matching_sign_rect_color, 30); // Darken the text color
+    matchingSignItem.querySelector('.lucky-label').style.color = darkenColor(data.matching_sign_rect_color, 30); // Darken the label color
+
+        // **Update the background image**
+    document.querySelector('.horoscope-container').style.backgroundImage = `url('/static/${data.image_path}')`;
+
 }
 
 // Event listeners for calendar items
@@ -58,6 +85,9 @@ document.querySelectorAll('.calendar-item').forEach(item => {
         fetch(url)
             .then(response => response.json())
             .then(data => {
+                // Log fetched data
+                console.log('Fetched Data:', data);
+
                 // Update the content with the new horoscope data
                 updateHoroscope(data);
 

@@ -63,6 +63,12 @@ def clear_database_table():
     except sqlite3.Error as e:
         logging.error(f"Error clearing the database table and assigning new horoscopes: {e}")
 
+# Function to generate random light colors (for the lucky info)
+def get_random_light_color():
+    """Generate a random light color."""
+    return f'rgba({random.randint(150, 255)}, {random.randint(150, 255)}, {random.randint(150, 255)}, 0.8)'
+
+# Update the shuffle and assign function to handle lucky info colors
 def shuffle_and_assign_horoscopes(cursor, target_date, used_message_ids):
     # Get the list of zodiac signs
     zodiac_signs = get_zodiac_signs()
@@ -91,13 +97,19 @@ def shuffle_and_assign_horoscopes(cursor, target_date, used_message_ids):
             used_message_ids[sign].add(message_id)
             break
 
-        # Insert the horoscope for the specific date and sign
-        cursor.execute('''
-            INSERT INTO daily_horoscope_assignments (date, sign, message_id)
-            VALUES (?, ?, ?)
-        ''', (target_date, sign, message_id))
+        # Generate random light colors for the lucky information fields
+        lucky_color_rect_color = get_random_light_color()
+        lucky_number_rect_color = get_random_light_color()
+        matching_sign_rect_color = get_random_light_color()
 
-    logging.info(f"Assigned unique horoscopes for {target_date}.")
+        # Insert the horoscope for the specific date, sign, and lucky colors
+        cursor.execute('''
+            INSERT INTO daily_horoscope_assignments (date, sign, message_id, 
+                lucky_color_rect_color, lucky_number_rect_color, matching_sign_rect_color)
+            VALUES (?, ?, ?, ?, ?, ?)
+        ''', (target_date, sign, message_id, lucky_color_rect_color, lucky_number_rect_color, matching_sign_rect_color))
+
+    logging.info(f"Assigned unique horoscopes and lucky info colors for {target_date}.")
 
 def get_zodiac_signs():
     return ['Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo', 
@@ -254,7 +266,7 @@ def render_horoscope_page(sign):
     # Fetch "today's" horoscope data
     today = date.today().strftime('%m/%d/%Y')
 
-    # Fetch the horoscope data for today (just like before)
+    # Fetch the horoscope data for today, including the colors
     conn = get_db()
     cursor = conn.cursor()
     cursor.execute('''
@@ -267,7 +279,11 @@ def render_horoscope_page(sign):
                generic_horoscope_messages.overall_rating,
                generic_horoscope_messages.lucky_color,
                generic_horoscope_messages.lucky_number,
-               generic_horoscope_messages.matching_sign
+               generic_horoscope_messages.matching_sign,
+               generic_horoscope_messages.image_path,
+               daily_horoscope_assignments.lucky_color_rect_color,
+               daily_horoscope_assignments.lucky_number_rect_color,
+               daily_horoscope_assignments.matching_sign_rect_color
         FROM daily_horoscope_assignments
         JOIN generic_horoscope_messages 
         ON daily_horoscope_assignments.message_id = generic_horoscope_messages.id
@@ -280,6 +296,7 @@ def render_horoscope_page(sign):
     if not horoscope:
         abort(404)
 
+    # Prepare horoscope data, including the colors for the lucky items
     horoscope_data = {
         'date': today,
         'message': horoscope[1],
@@ -290,26 +307,21 @@ def render_horoscope_page(sign):
         'overall_rating': horoscope[6],
         'lucky_color': horoscope[7],
         'lucky_number': horoscope[8],
-        'matching_sign': horoscope[9]
+        'matching_sign': horoscope[9],
+        'image_path' : horoscope[10],
+        'lucky_color_rect_color': horoscope[11],  # Fetch the color for the lucky color block
+        'lucky_number_rect_color': horoscope[12],  # Fetch the color for the lucky number block
+        'matching_sign_rect_color': horoscope[13]  # Fetch the color for the matching sign block
     }
 
-    # Render the HTML page with today's horoscope data
+    # Render the HTML page with today's horoscope data and colors
     return render_template('horoscope.html', sign=sign.capitalize(), horoscope_data=horoscope_data)
+
 
 @app.route('/horoscope/<sign>/<day>', methods=['GET'])
 @limiter.limit("1000 per day")
 def show_horoscope(sign, day):
-    # Convert sign to lowercase to avoid case sensitivity issues
     sign = sign.lower()
-
-    # Define the zodiac signs (in lowercase) to match the URL
-    zodiac_signs = ['aries', 'taurus', 'gemini', 'cancer', 'leo', 'virgo', 
-                    'libra', 'scorpio', 'sagittarius', 'capricorn', 
-                    'aquarius', 'pisces']
-
-    # Validate the zodiac sign
-    if sign not in zodiac_signs:
-        abort(404)  # If the sign is invalid, return a 404 error
 
     # Determine the date based on the 'day' parameter
     if day == 'yesterday':
@@ -319,10 +331,9 @@ def show_horoscope(sign, day):
     else:
         target_date = date.today()
 
-    # Format the date as mm/dd/yyyy
     formatted_date = target_date.strftime('%m/%d/%Y')
 
-    # Fetch the horoscope for the sign and the target date
+    # Fetch horoscope data and colors from the database
     conn = get_db()
     cursor = conn.cursor()
     cursor.execute('''
@@ -335,7 +346,11 @@ def show_horoscope(sign, day):
                generic_horoscope_messages.overall_rating,
                generic_horoscope_messages.lucky_color,
                generic_horoscope_messages.lucky_number,
-               generic_horoscope_messages.matching_sign
+               generic_horoscope_messages.matching_sign,
+               generic_horoscope_messages.image_path,
+               daily_horoscope_assignments.lucky_color_rect_color,
+               daily_horoscope_assignments.lucky_number_rect_color,
+               daily_horoscope_assignments.matching_sign_rect_color
         FROM daily_horoscope_assignments
         JOIN generic_horoscope_messages 
         ON daily_horoscope_assignments.message_id = generic_horoscope_messages.id
@@ -346,9 +361,9 @@ def show_horoscope(sign, day):
     horoscope = cursor.fetchone()
 
     if not horoscope:
-        abort(404)  # Return 404 if no horoscope is found
+        abort(404)
 
-    # Prepare the JSON response data
+    # Prepare the data for rendering the template
     horoscope_data = {
         'date': formatted_date,
         'message': horoscope[1],
@@ -359,7 +374,12 @@ def show_horoscope(sign, day):
         'overall_rating': horoscope[6],
         'lucky_color': horoscope[7],
         'lucky_number': horoscope[8],
-        'matching_sign': horoscope[9]
+        'matching_sign': horoscope[9],
+        'image_path' : horoscope[10],
+        'lucky_color_rect_color': horoscope[11],
+        'lucky_number_rect_color': horoscope[12],
+        'matching_sign_rect_color': horoscope[13],
+        
     }
 
     return jsonify(horoscope_data)

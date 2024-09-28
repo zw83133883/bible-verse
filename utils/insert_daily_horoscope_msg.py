@@ -5,6 +5,10 @@ from datetime import date, timedelta
 # Database connection setup
 DATABASE = 'bible.db'
 
+def get_random_light_color():
+    """Generate a random light color."""
+    return f'rgba({random.randint(150, 255)}, {random.randint(150, 255)}, {random.randint(150, 255)}, 0.8)'
+
 def insert_daily_horoscope_assignments():
     conn = sqlite3.connect(DATABASE)
     cursor = conn.cursor()
@@ -36,25 +40,31 @@ def insert_daily_horoscope_assignments():
     cursor.execute('DELETE FROM daily_horoscope_assignments WHERE date IN (?, ?, ?)', 
                    (formatted_yesterday, formatted_today, formatted_tomorrow))
 
+    # Track message_ids used for yesterday, today, and tomorrow to avoid duplicates
+    used_message_ids = set()
+
     # Function to insert assignments for a specific date
     def assign_horoscopes_for_date(date_str):
         for sign in zodiac_signs:
             while True:
                 message_id = random.choice(generic_messages)[0]  # Select a random message ID
                 
-                # Check if the message's matching sign is the same as the current zodiac sign
-                cursor.execute('''
-                    SELECT matching_sign FROM generic_horoscope_messages WHERE id = ?
-                ''', (message_id,))
-                matching_sign = cursor.fetchone()
-                
-                if matching_sign is None or matching_sign[0] == sign:
-                    break  # If no matching sign or it matches, break the loop
+                # Ensure that the message is unique across yesterday, today, and tomorrow
+                if message_id not in used_message_ids:
+                    used_message_ids.add(message_id)
+                    
+                    # Generate random light colors for the lucky fields
+                    lucky_color_rect_color = get_random_light_color()
+                    lucky_number_rect_color = get_random_light_color()
+                    matching_sign_rect_color = get_random_light_color()
 
-            cursor.execute('''
-                INSERT INTO daily_horoscope_assignments (date, sign, message_id)
-                VALUES (?, ?, ?)
-            ''', (date_str, sign, message_id))
+                    # Insert the data into the daily_horoscope_assignments table
+                    cursor.execute('''
+                        INSERT INTO daily_horoscope_assignments (date, sign, message_id, lucky_color_rect_color, lucky_number_rect_color, matching_sign_rect_color)
+                        VALUES (?, ?, ?, ?, ?, ?)
+                    ''', (date_str, sign, message_id, lucky_color_rect_color, lucky_number_rect_color, matching_sign_rect_color))
+                    
+                    break
 
     # Assign horoscopes for yesterday, today, and tomorrow
     assign_horoscopes_for_date(formatted_yesterday)

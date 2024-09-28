@@ -9,13 +9,22 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
 </head>
 
-<body>
-    <div class="horoscope-container">
+<body style="background-image: url('{{ url_for('static', filename=horoscope_data.image_path) }}'); background-size: cover; background-position: center;">
+    <div class="horoscope-container" style="background-image: url('{{ url_for('static', filename=horoscope_data.image_path) }}'); background-size: cover; background-position: center;">
         <!-- Header -->
         <div class="header">
+            <div class="gif-container">
+                <div class="tenor-gif-embed" data-postid="7294197955038308228" data-share-method="host" data-aspect-ratio="1.76596" data-width="100%">
+                    <a href="https://tenor.com/view/anime-pjsk-project-sekai-anime-shooting-star-shooting-star-gif-7294197955038308228">Anime Pjsk GIF</a>from 
+                    <a href="https://tenor.com/search/anime-gifs">Anime GIFs</a>
+                </div>
+            </div>
             <img src="{{ url_for('static', filename='horoscope-logo/' + sign + '.png') }}" alt="{{ sign }} Logo" class="sign-logo">
-            <h1>{{ sign }} Horoscope</h1>
+            <!-- <h1>{{ sign }} Horoscope</h1> -->
         </div>
+        
+        <script type="text/javascript" async src="https://tenor.com/embed.js"></script>
+        
         
         <!-- Calendar Links -->
         <div class="calendar-container">
@@ -80,21 +89,21 @@
             </div>
         </div>
 
-        <!-- Lucky Info -->
         <div class="lucky-info-container">
-            <div class="lucky-item">
-                <div class="lucky-title">Lucky Color</div>
-                <div class="lucky-detail">{{ horoscope_data.lucky_color }}</div>
+            <div class="lucky-item" style="background-color: {{ horoscope_data.lucky_color_rect_color }}">
+                <div class="lucky-circle">{{ horoscope_data.lucky_color }}</div>
+                <div class="lucky-label">Lucky Color</div>
             </div>
-            <div class="lucky-item">
-                <div class="lucky-title">Lucky Number</div>
-                <div class="lucky-detail">{{ horoscope_data.lucky_number }}</div>
+            <div class="lucky-item" style="background-color: {{ horoscope_data.lucky_number_rect_color }}">
+                <div class="lucky-circle">{{ horoscope_data.lucky_number }}</div>
+                <div class="lucky-label">Lucky Number</div>
             </div>
-            <div class="lucky-item">
-                <div class="lucky-title">Matching Sign</div>
-                <div class="lucky-detail">{{ horoscope_data.matching_sign }}</div>
+            <div class="lucky-item" style="background-color: {{ horoscope_data.matching_sign_rect_color }}">
+                <div class="lucky-circle">{{ horoscope_data.matching_sign }}</div>
+                <div class="lucky-label">Matching Sign</div>
             </div>
         </div>
+        
 
         <!-- Horoscope Message -->
         <div class="message-container">
