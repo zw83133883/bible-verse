@@ -4,13 +4,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ sign }} Horoscope</title>
+    <title>{{ sign }} Daily Horoscope@Rancilili</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='horoscope-styles.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
 </head>
 
 <body style="background-image: url('{{ url_for('static', filename=horoscope_data.image_path) }}'); background-size: cover; background-position: center;">
     <div class="horoscope-container" style="background-image: url('{{ url_for('static', filename=horoscope_data.image_path) }}'); background-size: cover; background-position: center;">
+        <!-- Audio Button -->
+        <div class="audio-button-container">
+            <button class="audio-button" onclick="toggleAudio()">
+                <i class="fas fa-volume-up"></i> <!-- FontAwesome icon for audio -->
+            </button>
+            <audio id="audioPlayer" src="{{ url_for('static', filename='music/piano.mp3') }}" autoplay loop></audio>
+        </div>
+
+        
         <!-- Header -->
         <div class="header">
             <div class="gif-container">

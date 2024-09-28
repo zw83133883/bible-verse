@@ -13,9 +13,9 @@ body {
     max-width: 400px;
     margin: 0 auto;
     padding: 20px;
-    background-color: #fff;
-    border-radius: 10px;
-    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+    background-color: rgba(255, 255, 255, 0.7); /* Slightly transparent background */
+    border-radius: 15px; /* Rounder corners for a smoother look */
+    box-shadow: 0px 15px 30px rgba(0, 0, 0, 0.15); /* Softer shadow for subtle lift */
     color: white;
 }
 
@@ -33,7 +33,14 @@ body {
     height: 100%;
     z-index: 0; /* Ensure the GIF is behind */
     overflow: hidden; /* Hide any excess part of the GIF */
+
+    /* Apply fading on all sides (including corners) */
+    mask-image: radial-gradient(circle at center, 
+        rgba(0, 0, 0, 1) 40%,  /* Solid center */
+        rgba(0, 0, 0, 0) 40% /* Fully transparent at the edges */
+    );
 }
+
 
 .sign-logo {
     position: relative;
@@ -107,12 +114,16 @@ body {
 }
 
 .rating-container {
-    background-color: #f8e5e5;
+    position: relative;
+    /* Using rgba to add transparency to the background without affecting the content */
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.6) 0%, rgba(240, 240, 240, 0.6) 100%);
     padding: 15px;
     border-radius: 8px;
     margin-bottom: 20px;
-    color: #f66969;
+    color: #f5f567; /* Ensure the text color remains solid */
 }
+
+
 
 .overall-rating {
     text-align: center;
@@ -123,12 +134,14 @@ body {
     font-size: 1rem;
     margin-bottom: 5px;
     text-align: center; /* Center the labels */
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8); /* Adds black shadow around the text */
 }
 
 .stars i {
     color: #f39c12;
     font-size: 1.2rem;
     margin-right: 2px;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
 }
 
 .rating-grid {
@@ -229,4 +242,27 @@ body {
 
 .social-media-links a:hover {
     color: #f39c12;
+}
+
+.audio-button-container {
+    position: absolute;
+    top: 20px;
+    right: 40px;
+    z-index: 1000; /* Ensure the audio button is on top */
+}
+
+.audio-button {
+    background-color: transparent;
+    border: none;
+    color: #ffffff;
+    font-size: 24px;
+    cursor: pointer;
+}
+
+.audio-button i {
+    transition: color 0.3s;
+}
+
+.audio-button:hover i {
+    color: #f0f0f0;
 }
