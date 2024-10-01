@@ -180,6 +180,8 @@ body, html {
     text-align: center; /* Center the date text */
 }
 
+
+
 /* Media Query for smaller screens (e.g., tablets) */
 @media (max-width: 768px) {
     .horoscope-logo {

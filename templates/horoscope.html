@@ -41,9 +41,25 @@
                 <a href="/horoscope/{{ sign }}/yesterday" class="calendar-item" data-day="yesterday">Yesterday</a>
                 <a href="/horoscope/{{ sign }}/today" class="calendar-item active" data-day="today">Today</a>
                 <a href="/horoscope/{{ sign }}/tomorrow" class="calendar-item" data-day="tomorrow">Tomorrow</a>
+                <a href="#" class="calendar-item" data-day="story">Story</a> <!-- Story link added -->
+                <a href="#" class="calendar-item" data-day="characteristics">Characteristics</a> 
             </div>
         </div>
+      <!-- YouTube Video Player Container -->
+        <div id="player-container">
+            <iframe id="player" width="100%" height="100%" frameborder="0" 
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+        </div>
+
+        <div class="story-container" style="display: none;">
+            <h2>{{ sign }} Story</h2>
+            <p id="horoscope-story"></p>
+        </div>
         
+        <div class="characteristics-container" style="display: none;">
+            <h2>{{ sign }} Characteristics</h2>
+            <p id="horoscope-characteristics"></p>
+        </div>
         <!-- Horoscope Date -->
         <div class="date-container">
             <span class="date">{{ horoscope_data.date }}</span>

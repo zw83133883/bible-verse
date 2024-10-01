@@ -1,4 +1,4 @@
-from flask import Flask,jsonify, render_template,request,g,redirect,url_for,abort
+from flask import Flask,jsonify, render_template,request,g,redirect,url_for,abort,session
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_caching import Cache
@@ -10,9 +10,9 @@ import sqlite3
 import uuid
 from werkzeug.middleware.proxy_fix import ProxyFix
 import tzlocal
-import datetime
 import time
-from datetime import date, timedelta
+from datetime import date, timedelta, datetime
+import uuid
 
 logging.basicConfig(level=logging.INFO)
 # Disable logging for specific libraries
@@ -21,7 +21,7 @@ logging.getLogger('pyttsx3').setLevel(logging.ERROR)
 logging.getLogger("gtts").setLevel(logging.ERROR)
 logging.getLogger("urllib3").setLevel(logging.ERROR)
 logging.getLogger("PIL").setLevel(logging.ERROR)
-
+uuid_expiration_time = timedelta(minutes=10)
 DATABASE = "bible.db"
 
 
@@ -44,24 +44,27 @@ def clear_database_table():
             # Clear the cached verses
             cursor.execute('DELETE FROM cached_verses')
 
-            # Calculate the dates for yesterday, today, and tomorrow
-            today = date.today()  # Today is 09/26/2024 (for example)
+            # Calculate the dates for yesterday, today, tomorrow, and the day before yesterday
+            today = date.today()
             yesterday = today - timedelta(days=1)
+            day_before_yesterday = today - timedelta(days=2)  # Day before yesterday
             tomorrow = today + timedelta(days=1)
 
             formatted_yesterday = yesterday.strftime('%m/%d/%Y')
             formatted_today = today.strftime('%m/%d/%Y')
             formatted_tomorrow = tomorrow.strftime('%m/%d/%Y')
 
-            cursor.execute('DELETE FROM daily_horoscope_assignments WHERE date = ?', (formatted_yesterday,))
+            # Delete any data older than yesterday
+            cursor.execute('DELETE FROM daily_horoscope_assignments WHERE date < ?', (formatted_yesterday,))
 
             used_message_ids = {sign: set() for sign in get_zodiac_signs()}  # Track used message IDs for each sign
             shuffle_and_assign_horoscopes(cursor, formatted_tomorrow, used_message_ids)
 
             conn.commit()
-            logging.info(f"Deleted yesterday's data ({formatted_yesterday}), reassigned horoscopes for today ({formatted_today}), and generated for tomorrow ({formatted_tomorrow}).")
+            logging.info(f"Deleted data older than yesterday, reassigned horoscopes for today ({formatted_today}), and generated for tomorrow ({formatted_tomorrow}).")
     except sqlite3.Error as e:
         logging.error(f"Error clearing the database table and assigning new horoscopes: {e}")
+
 
 # Function to generate random light colors (for the lucky info)
 def get_random_light_color():
@@ -262,6 +265,26 @@ def render_horoscope_page(sign):
     # Validate the zodiac sign
     if sign.lower() not in zodiac_signs:
         abort(404)
+
+    # Generate a unique UUID
+    unique_id = str(uuid.uuid4())
+    # Store the UUID in the session for validation later
+    session['horoscope_uuid'] = unique_id
+
+    # Redirect the user to a new URL with the UUID
+    safe_url = url_for('render_clean_horoscope_with_uuid', sign=sign, uuid=unique_id)
+    return redirect(safe_url)
+
+@app.route('/horoscope-view/<sign>/<uuid>', methods=['GET'])
+@limiter.limit("1000 per day")
+def render_clean_horoscope_with_uuid(sign, uuid):
+    stored_uuid = session.get('horoscope_uuid')
+    
+    if not stored_uuid or stored_uuid != uuid:
+        return "You will need to purchase one of our daily horoscope bracelet to access this page. For existing users, please re-scan your bracelet. If you have any questions or concerns please contact echocraftllc@gmail.com", 404
+
+    # If the UUID matches, clear it from the session for one-time use
+    session.pop('horoscope_uuid', None)
 
     # Fetch "today's" horoscope data
     today = date.today().strftime('%m/%d/%Y')

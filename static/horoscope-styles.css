@@ -68,8 +68,10 @@ body {
 
 .scroll-calendar {
     display: flex;
-    justify-content: space-between;
+    flex-wrap: wrap; /* Allow items to wrap to the next row */
     gap: 10px;
+    justify-content: center;
+    width: 100%; /* Ensure it takes full width */
 }
 
 .calendar-item {
@@ -120,9 +122,28 @@ body {
     padding: 15px;
     border-radius: 8px;
     margin-bottom: 20px;
-    color: #f5f567; /* Ensure the text color remains solid */
+    color: #000000; /* Ensure the text color remains solid */
 }
 
+/* YouTube Video Player Styling */
+#player-container {
+    display: none; /* Initially hidden, can be toggled with JavaScript */
+    width: 100%;
+    max-width: 100%; /* Ensures the container doesn’t exceed the viewport width */
+    height: 0;
+    padding-bottom: 56.25%; /* Creates a 16:9 aspect ratio */
+    position: relative; /* Allows for absolute positioning inside */
+    margin-bottom: 20px; /* Adds space below the player */
+}
+
+#player-container iframe {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%; /* Makes sure the iframe covers the full player container */
+    border: none; /* Removes the default iframe border */
+}
 
 
 .overall-rating {
@@ -134,7 +155,8 @@ body {
     font-size: 1rem;
     margin-bottom: 5px;
     text-align: center; /* Center the labels */
-    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8); /* Adds black shadow around the text */
+    /* text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);  */
+    font-weight: bold;  /* Make the font bold */
 }
 
 .stars i {
@@ -219,13 +241,16 @@ body {
 .message-container {
     text-align: center;
     margin-bottom: 20px;
+    background-color: rgba(0, 0, 0, 0.5); /* Darker background with opacity */
+    padding: 20px;
+    border-radius: 8px; /* Add rounded corners if needed */
 }
 
 .horoscope-message {
     font-size: 1.2rem;
-    font-style: italic;
     color: #ffffff;
     text-shadow: 2px 2px 4px #000000; 
+    text-align: left;
 }
 
 .social-media-links {
@@ -266,3 +291,23 @@ body {
 .audio-button:hover i {
     color: #f0f0f0;
 }
+.characteristics-container {
+    background-color: rgba(0, 0, 0, 0.7); /* Dark background with opacity */
+    padding: 20px;
+    border-radius: 10px;
+    margin-top: 20px;
+    color: #fff;
+    text-align: left;
+}
+
+.characteristics-container h2 {
+    font-size: 1.2rem;
+    margin-bottom: 15px;
+    color: #FFD700; /* Golden color for the title */
+}
+
+.characteristics-container p {
+    font-size: 1.2rem;
+    line-height: 1.5;
+}
+
