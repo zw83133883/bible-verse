@@ -130,25 +130,74 @@
         </div>
         
 
-        <!-- Horoscope Message -->
         <div class="message-container">
-            <p class="horoscope-message">{{ horoscope_data.message }}</p>
+            <!-- Main Horoscope Message -->
+            <p class="horoscope-message"><strong>Horoscope:</strong> {{ horoscope_data.message }}</p>
         </div>
-
-        <!-- Social Media Links -->
+        
+        <div class="message-container">
+            <div class="icon-wrapper">
+                <img src="/static/horoscope-logo/love.png" alt="Love Icon" class="rating-icon">
+            </div>
+            <!-- Love Explanation -->
+            <div class="message-content">
+                <h3>Love Rating</h3>  <!-- Title above the explanation -->
+                <p class="horoscope-message"><span class="love-message"></span></p>
+            </div>
+        </div>
+        
+        <div class="message-container">
+            <div class="icon-wrapper">
+                <img src="/static/horoscope-logo/career.png" alt="Career Icon" class="rating-icon">
+            </div>
+            <!-- Career Explanation -->
+            <div class="message-content">
+                <h3>Career Rating</h3>  <!-- Title above the explanation -->
+                <p class="horoscope-message"><span class="career-message"></span></p>
+            </div>
+        </div>
+        
+        <div class="message-container">
+            <div class="icon-wrapper">
+                <img src="/static/horoscope-logo/health.png" alt="Health Icon" class="rating-icon">
+            </div>
+            <!-- Health Explanation -->
+            <div class="message-content">
+                <h3>Health Rating</h3>  <!-- Title above the explanation -->
+                <p class="horoscope-message"><span class="health-message"></span></p>
+            </div>
+        </div>
+        
+        <div class="message-container">
+            <div class="icon-wrapper">
+                <img src="/static/horoscope-logo/wealth.png" alt="Wealth Icon" class="rating-icon">
+            </div>
+            <!-- Wealth Explanation -->
+            <div class="message-content">
+                <h3>Wealth Rating</h3>  <!-- Title above the explanation -->
+                <p class="horoscope-message"><span class="wealth-message"></span></p>
+            </div>
+        </div>
+        
+        <div class="message-container">
+            <div class="icon-wrapper">
+                <img src="/static/horoscope-logo/star.png" alt="Overall Icon" class="rating-icon">
+            </div>
+            <!-- Overall Explanation -->
+            <div class="message-content">
+                <h3>Overall Rating</h3>  <!-- Title above the explanation -->
+                <p class="horoscope-message"><span class="overall-message"></span></p>
+            </div>
+        </div>
+        <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo" class="logo">
         <div class="social-media-links">
-            <a href="https://www.facebook.com/profile.php?id=61560670367223" target="_blank">
-                <i class="fab fa-facebook-square"></i>
-            </a>
-            <a href="https://x.com/Rancilili" target="_blank">
-                <i class="fab fa-twitter-square"></i>
-            </a>
-            <a href="https://www.instagram.com/rancilili_official/" target="_blank">
-                <i class="fab fa-instagram-square"></i>
-            </a>
-            <a href="mailto:echocraftllc@email.com">
-                <i class="fas fa-envelope-square"></i>
-            </a>
+            <a href="https://www.facebook.com/profile.php?id=61560670367223" target="_blank" class="social-link"><img src="{{ url_for('static', filename='fb.ico') }}" alt="Facebook"></a>
+            <a href="https://x.com/Rancilili" target="_blank" class="social-link"><img src="{{ url_for('static', filename='twitter.ico') }}" alt="Twitter"></a>
+            <a href="https://www.instagram.com/rancilili_official/" target="_blank" class="social-link"><img src="{{ url_for('static', filename='ins.ico') }}" alt="Instagram"></a>
+            <a href="mailto:echocraftllc@email.com" class="social-link"><img src="{{ url_for('static', filename='email.ico') }}" alt="Email"></a>
+        </div>
+        <div class="copyright">
+            <span>Copyright © Rancilili, all rights reserved</span>
         </div>
     </div>
     <script src="{{ url_for('static', filename='script.js') }}"></script>

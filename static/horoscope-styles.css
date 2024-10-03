@@ -110,7 +110,7 @@ body {
 }
 
 .date {
-    font-size: 1.2rem;
+    font-size: 1.4rem;
     color: #ffffff;
     text-shadow: 2px 2px 4px #000000; 
 }
@@ -241,12 +241,38 @@ body {
 .message-container {
     text-align: center;
     margin-bottom: 20px;
-    background-color: rgba(0, 0, 0, 0.5); /* Darker background with opacity */
+    background-color: rgba(0, 0, 0, 0.7); /* Dark background with opacity */
     padding: 20px;
     border-radius: 8px; /* Add rounded corners if needed */
 }
 
+.icon-wrapper {
+    flex-shrink: 0;
+    margin-right: 15px; /* Space between image and text */
+}
+
+.rating-icon {
+    width: 72px;
+    height: 72px; /* Adjust the size as needed */
+    object-fit: cover;
+}
+
+.message-content {
+    flex-grow: 1;
+}
+
+.message-content h3 {
+    margin-top: 0;
+    font-size: 1.2rem;
+}
+
+.message-content p {
+    font-size: 1.2rem;
+    color: #ffffff;
+}
+
 .horoscope-message {
+    margin-top:10px;
     font-size: 1.2rem;
     color: #ffffff;
     text-shadow: 2px 2px 4px #000000; 
@@ -256,17 +282,36 @@ body {
 .social-media-links {
     display: flex;
     justify-content: center;
-    gap: 15px;
+    gap: 5px;
 }
 
-.social-media-links a {
-    font-size: 2rem;
-    color: #555;
-    text-decoration: none;
+.social-link {
+    display: inline-block;
+    margin: 0 5px;
+    color: #333;
+    font-size: 1px; /* Default icon size */
 }
 
-.social-media-links a:hover {
-    color: #f39c12;
+.social-link img {
+    width: 24px; /* Adjust icon size */
+    height: 24px;
+}
+.logo {
+    margin-top: 10px;
+    display: block;
+    margin: 0 auto;
+    width: 100px; /* Adjust width as needed */
+    height: auto;
+    margin-bottom: 10px; /* Add some space between logo and social links */
+    z-index: 999;
+}
+
+/* Copyright section (without logo) */
+.copyright {
+    font-size: 12px; /* Adjust font size as needed */
+    color: white; /* Adjust color as needed */
+    margin-top: 10px;
+    text-align: center;
 }
 
 .audio-button-container {

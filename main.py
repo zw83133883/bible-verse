@@ -47,7 +47,6 @@ def clear_database_table():
             # Calculate the dates for yesterday, today, tomorrow, and the day before yesterday
             today = date.today()
             yesterday = today - timedelta(days=1)
-            day_before_yesterday = today - timedelta(days=2)  # Day before yesterday
             tomorrow = today + timedelta(days=1)
 
             formatted_yesterday = yesterday.strftime('%m/%d/%Y')
@@ -58,12 +57,23 @@ def clear_database_table():
             cursor.execute('DELETE FROM daily_horoscope_assignments WHERE date < ?', (formatted_yesterday,))
 
             used_message_ids = {sign: set() for sign in get_zodiac_signs()}  # Track used message IDs for each sign
-            shuffle_and_assign_horoscopes(cursor, formatted_tomorrow, used_message_ids)
+
+            # Assign horoscopes for today and tomorrow, but first check if they already exist
+            for assignment_date in [formatted_today, formatted_tomorrow]:
+                for sign in get_zodiac_signs():
+                    # Check if an entry already exists for the sign and date
+                    cursor.execute(
+                        'SELECT COUNT(1) FROM daily_horoscope_assignments WHERE sign = ? AND date = ?',
+                        (sign, assignment_date)
+                    )
+                    if cursor.fetchone()[0] == 0:  # If no record exists
+                        shuffle_and_assign_horoscopes(cursor, assignment_date, used_message_ids)
 
             conn.commit()
             logging.info(f"Deleted data older than yesterday, reassigned horoscopes for today ({formatted_today}), and generated for tomorrow ({formatted_tomorrow}).")
     except sqlite3.Error as e:
         logging.error(f"Error clearing the database table and assigning new horoscopes: {e}")
+
 
 
 # Function to generate random light colors (for the lucky info)
@@ -289,7 +299,7 @@ def render_clean_horoscope_with_uuid(sign, uuid):
     # Fetch "today's" horoscope data
     today = date.today().strftime('%m/%d/%Y')
 
-    # Fetch the horoscope data for today, including the colors
+    # Fetch the horoscope data for today, including the colors and explanation IDs
     conn = get_db()
     cursor = conn.cursor()
     cursor.execute('''
@@ -304,6 +314,11 @@ def render_clean_horoscope_with_uuid(sign, uuid):
                generic_horoscope_messages.lucky_number,
                generic_horoscope_messages.matching_sign,
                generic_horoscope_messages.image_path,
+               generic_horoscope_messages.love_explanation_id,   -- Fetch the explanation IDs
+               generic_horoscope_messages.career_explanation_id, -- Fetch the explanation IDs
+               generic_horoscope_messages.health_explanation_id, -- Fetch the explanation IDs
+               generic_horoscope_messages.wealth_explanation_id, -- Fetch the explanation IDs
+               generic_horoscope_messages.overall_explanation_id, -- Fetch the explanation IDs
                daily_horoscope_assignments.lucky_color_rect_color,
                daily_horoscope_assignments.lucky_number_rect_color,
                daily_horoscope_assignments.matching_sign_rect_color
@@ -319,7 +334,7 @@ def render_clean_horoscope_with_uuid(sign, uuid):
     if not horoscope:
         abort(404)
 
-    # Prepare horoscope data, including the colors for the lucky items
+    # Prepare horoscope data, including the explanation IDs and colors for the lucky items
     horoscope_data = {
         'date': today,
         'message': horoscope[1],
@@ -332,13 +347,19 @@ def render_clean_horoscope_with_uuid(sign, uuid):
         'lucky_number': horoscope[8],
         'matching_sign': horoscope[9],
         'image_path' : horoscope[10],
-        'lucky_color_rect_color': horoscope[11],  # Fetch the color for the lucky color block
-        'lucky_number_rect_color': horoscope[12],  # Fetch the color for the lucky number block
-        'matching_sign_rect_color': horoscope[13]  # Fetch the color for the matching sign block
+        'love_explanation_id': horoscope[11],     # Add explanation IDs to the returned data
+        'career_explanation_id': horoscope[12],   # Add explanation IDs to the returned data
+        'health_explanation_id': horoscope[13],   # Add explanation IDs to the returned data
+        'wealth_explanation_id': horoscope[14],   # Add explanation IDs to the returned data
+        'overall_explanation_id': horoscope[15],  # Add explanation IDs to the returned data
+        'lucky_color_rect_color': horoscope[16],  # Fetch the color for the lucky color block
+        'lucky_number_rect_color': horoscope[17],  # Fetch the color for the lucky number block
+        'matching_sign_rect_color': horoscope[18]  # Fetch the color for the matching sign block
     }
 
     # Render the HTML page with today's horoscope data and colors
     return render_template('horoscope.html', sign=sign.capitalize(), horoscope_data=horoscope_data)
+
 
 
 @app.route('/horoscope/<sign>/<day>', methods=['GET'])
@@ -356,7 +377,7 @@ def show_horoscope(sign, day):
 
     formatted_date = target_date.strftime('%m/%d/%Y')
 
-    # Fetch horoscope data and colors from the database
+    # Fetch horoscope data, colors, and explanation IDs from the database
     conn = get_db()
     cursor = conn.cursor()
     cursor.execute('''
@@ -371,6 +392,11 @@ def show_horoscope(sign, day):
                generic_horoscope_messages.lucky_number,
                generic_horoscope_messages.matching_sign,
                generic_horoscope_messages.image_path,
+               generic_horoscope_messages.love_explanation_id,   -- Fetch the explanation IDs
+               generic_horoscope_messages.career_explanation_id, -- Fetch the explanation IDs
+               generic_horoscope_messages.health_explanation_id, -- Fetch the explanation IDs
+               generic_horoscope_messages.wealth_explanation_id, -- Fetch the explanation IDs
+               generic_horoscope_messages.overall_explanation_id, -- Fetch the explanation IDs
                daily_horoscope_assignments.lucky_color_rect_color,
                daily_horoscope_assignments.lucky_number_rect_color,
                daily_horoscope_assignments.matching_sign_rect_color
@@ -386,7 +412,7 @@ def show_horoscope(sign, day):
     if not horoscope:
         abort(404)
 
-    # Prepare the data for rendering the template
+    # Prepare the data for rendering the template, including explanation IDs
     horoscope_data = {
         'date': formatted_date,
         'message': horoscope[1],
@@ -398,11 +424,15 @@ def show_horoscope(sign, day):
         'lucky_color': horoscope[7],
         'lucky_number': horoscope[8],
         'matching_sign': horoscope[9],
-        'image_path' : horoscope[10],
-        'lucky_color_rect_color': horoscope[11],
-        'lucky_number_rect_color': horoscope[12],
-        'matching_sign_rect_color': horoscope[13],
-        
+        'image_path': horoscope[10],
+        'love_explanation_id': horoscope[11],     # Include explanation IDs in the returned data
+        'career_explanation_id': horoscope[12],   # Include explanation IDs in the returned data
+        'health_explanation_id': horoscope[13],   # Include explanation IDs in the returned data
+        'wealth_explanation_id': horoscope[14],   # Include explanation IDs in the returned data
+        'overall_explanation_id': horoscope[15],  # Include explanation IDs in the returned data
+        'lucky_color_rect_color': horoscope[16],
+        'lucky_number_rect_color': horoscope[17],
+        'matching_sign_rect_color': horoscope[18],
     }
 
     return jsonify(horoscope_data)

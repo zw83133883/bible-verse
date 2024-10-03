@@ -1,6 +1,7 @@
 import sqlite3
 import random
 from datetime import date, timedelta
+import json
 
 # Database connection setup
 DATABASE = 'bible.db'

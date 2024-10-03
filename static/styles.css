@@ -162,24 +162,6 @@ body, html {
   border-radius: 4px;
   font-size: 14px;
 }
-.horoscope-logo img {
-    width: 400px; /* Adjust the width as needed */
-    height: auto; /* Maintains aspect ratio */
-    display: block; /* Centers the image if you want */
-    margin: 0 auto; /* Centers the logo horizontally */
-}
-
-.horoscope-logo {
-    margin-top: 200px; /* Adjust this value as needed */
-    text-align: center; /* Centers the logo horizontally */
-}
-.horoscope-date {
-    margin-top: 50px; /* Space above the date */
-    font-size: 3rem; /* Font size for the date */
-    color: white; /* Text color for the date */
-    text-align: center; /* Center the date text */
-}
-
 
 
 /* Media Query for smaller screens (e.g., tablets) */

@@ -204,6 +204,30 @@ function toggleAudio() {
     }
 }
 
+// New function to load explanations from JSON based on IDs
+function loadExplanations(data) {
+    // Fetch explanations from the JSON file
+    fetch('/static/horoscope-json/rating_explanation.json')
+        .then(response => response.json())
+        .then(explanations => {
+            // Helper function to get explanation by category and ID
+            function getExplanation(category, id) {
+                for (let rating in explanations[category]) {
+                    const explanation = explanations[category][rating].find(e => e.id === id);
+                    if (explanation) return explanation.message;
+                }
+                return 'Explanation not found';
+            }
+
+            // Update explanation text in the document based on retrieved IDs
+            document.querySelector('.love-message').innerText = getExplanation('love', data.love_explanation_id);
+            document.querySelector('.career-message').innerText = getExplanation('career', data.career_explanation_id);
+            document.querySelector('.health-message').innerText = getExplanation('health', data.health_explanation_id);
+            document.querySelector('.wealth-message').innerText = getExplanation('wealth', data.wealth_explanation_id);
+            document.querySelector('.overall-message').innerText = getExplanation('overall', data.overall_explanation_id);
+        })
+        .catch(error => console.error('Error loading explanations:', error));
+}
 
 function updateHoroscope(data) {
     // Update the date
@@ -269,7 +293,7 @@ function updateHoroscope(data) {
 // Use template literals and ensure url() is properly wrapped in backticks
     document.querySelector('.horoscope-container').style.backgroundImage = `url('/static/${data.image_path}')`;
     document.body.style.backgroundImage = `url('/static/${data.image_path}')`;
-
+    loadExplanations(data);
 }
 
 document.querySelectorAll('.calendar-item').forEach(item => {
@@ -290,11 +314,17 @@ document.querySelectorAll('.calendar-item').forEach(item => {
             document.querySelector('.lucky-info-container').style.display = 'none';
             document.querySelector('.rating-container').style.display = 'none';
             document.querySelector('.characteristics-container').style.display ='none';
-            document.querySelector('.message-container').style.display = 'block';
             document.querySelector('.date-container').style.display = 'block';
 
             // Show the story content
             document.querySelector('.horoscope-message').innerHTML = story;
+            document.querySelectorAll('.message-container').forEach(function (container,index) {
+                if(index > 0){
+                    container.style.display = 'none';
+                } 
+            });
+
+            document.querySelector('.message-container').style.display = 'block';
             document.querySelector('.date').innerHTML = videoData.title.replace('(', '<br>(');
 
             if (videoData) {
@@ -315,7 +345,9 @@ document.querySelectorAll('.calendar-item').forEach(item => {
                     document.querySelector('.lucky-info-container').style.display = 'none';
                     document.querySelector('.rating-container').style.display = 'none';
                     document.querySelector('.story-container').style.display = 'none'; // Hide story container
-                    document.querySelector('.message-container').style.display = 'none';
+                    document.querySelectorAll('.message-container').forEach(function (container) {
+                        container.style.display = 'none';
+                    });
                     document.querySelector('.date-container').style.display = 'none';
                     document.getElementById('player-container').style.display = 'none';
                     
@@ -333,7 +365,7 @@ document.querySelectorAll('.calendar-item').forEach(item => {
                 .catch(error => console.error('Error fetching zodiac characteristics:', error));
         } else {
             const url = this.href;  // Get the URL for the selected day
-
+            stopYouTubeVideo();  // Call function to stop video
             // Fetch the horoscope data for the selected day
             fetch(url)
                 .then(response => response.json())
@@ -346,11 +378,16 @@ document.querySelectorAll('.calendar-item').forEach(item => {
                     document.querySelector('.rating-container').style.display = 'block';
                     document.querySelector('.characteristics-container').style.display ='none';
                     document.querySelector('.date-container').style.display = 'block';
-                    document.querySelector('.message-container').style.display = 'block';
+                    document.querySelectorAll('.message-container').forEach(function (container,index) {
+                        if(index == 0){
+                            container.style.display = 'none';
+                        }else{
+                            container.style.display = 'block';
+                        }
+                    });
 
                     // Hide the YouTube player and clear the video
                     document.getElementById('player-container').style.display = 'none';
-                    stopYouTubeVideo();  // Call function to stop video
                 })
                 .catch(error => console.error('Error fetching horoscope:', error));
         }
@@ -370,3 +407,40 @@ function loadYouTubeVideo(videoId, startTime) {
 function stopYouTubeVideo() {
     document.getElementById('player').src = '';
 }
+document.addEventListener('DOMContentLoaded', function () {
+    const sign = document.title.split(' ')[0].toLowerCase(); // Assuming the title starts with the zodiac sign
+    const url = `/horoscope/${sign}/today`;  // Fetch today's horoscope data
+
+    // Fetch the horoscope data for today as soon as the page loads
+    fetch(url)
+        .then(response => response.json())
+        .then(data => {
+            // Update the content with the fetched horoscope data
+            updateHoroscope(data);
+
+            // Show lucky info and rating containers when data is loaded
+            document.querySelector('.lucky-info-container').style.display = 'flex';
+            document.querySelector('.rating-container').style.display = 'block';
+            document.querySelector('.characteristics-container').style.display ='none';
+            document.querySelector('.date-container').style.display = 'block';
+            
+            // Hide the first message container
+            const firstMessageContainer = document.querySelector('.message-container');
+            if (firstMessageContainer) {
+                firstMessageContainer.style.display = 'none';
+            }
+
+            // Show all other message containers
+            const otherMessageContainers = document.querySelectorAll('.message-container');
+            otherMessageContainers.forEach((container, index) => {
+                if (index > 0) {  // Skip the first one
+                    container.style.display = 'block';
+                }
+            });
+
+            // Hide the YouTube player
+            document.getElementById('player-container').style.display = 'none';
+        })
+        .catch(error => console.error('Error fetching today\'s horoscope:', error));
+});
+

@@ -38,7 +38,7 @@ cursor = conn.cursor()
 cursor.execute('''
     CREATE TABLE IF NOT EXISTS generic_horoscope_messages (
         id INTEGER PRIMARY KEY AUTOINCREMENT, 
-        message TEXT NOT NULL,
+        message TEXT,
         love_rating INT NOT NULL CHECK (love_rating >= 1 AND love_rating <= 5),
         career_rating INT NOT NULL CHECK (career_rating >= 1 AND career_rating <= 5),
         health_rating INT NOT NULL CHECK (health_rating >= 1 AND health_rating <= 5),
@@ -47,10 +47,14 @@ cursor.execute('''
         lucky_color TEXT NOT NULL,
         lucky_number TEXT NOT NULL,
         matching_sign TEXT NOT NULL,
-        image_path TEXT NOT NULL
+        image_path TEXT NOT NULL,
+        love_explanation_id INTEGER,
+        career_explanation_id INTEGER,
+        health_explanation_id INTEGER,
+        wealth_explanation_id INTEGER,
+        overall_explanation_id INTEGER
     )
 ''')
-
 
 cursor.execute('''
     CREATE TABLE IF NOT EXISTS daily_horoscope_assignments (
@@ -58,7 +62,10 @@ cursor.execute('''
         date DATE NOT NULL,
         sign TEXT NOT NULL,
         message_id INTEGER NOT NULL,
-        FOREIGN KEY (message_id) REFERENCES generic_horoscope_messages (id),
+        lucky_color_rect_color TEXT NOT NULL,
+        lucky_number_rect_color TEXT NOT NULL,
+        matching_sign_rect_color TEXT NOT NULL,
+        FOREIGN KEY (message_id) REFERENCES generic_horoscope_messages(id),
         UNIQUE (sign, date)
     )
 ''')
