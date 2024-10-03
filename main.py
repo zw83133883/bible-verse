@@ -35,7 +35,12 @@ app.secret_key = 'c4738e82d8075e896fbb3f5d3d7c7c3fa9fba9dbd0eafc9c'
 app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_port=1, x_prefix=1)
 # Add this teardown function to close the database connection after each request
 
-
+# Initialize the rate limiter
+limiter = Limiter(
+    get_remote_address,
+    app=app,
+    default_limits=["5 per hour"]  # Adjust the rate limit as needed
+)
 def clear_database_table():
     try:
         with sqlite3.connect('bible.db') as conn:
@@ -136,6 +141,17 @@ def get_db():
         db = g._database = sqlite3.connect(DATABASE)
         db.row_factory = sqlite3.Row  # Allows access to rows as dictionaries
     return db
+# Default route for when someone accesses the website without any path
+@app.route('/')
+def home():
+    # Return the access denied page with a 404 status code
+    return render_template('access_denied.html'), 404
+
+@app.route('/faq')
+@limiter.limit("1000 per day")
+def faq():
+    # Return the access denied page with a 404 status code
+    return render_template('faq.html'), 404
 
 @app.teardown_appcontext
 def close_db(exception):
@@ -143,12 +159,7 @@ def close_db(exception):
     if db is not None:
         db.close()
 
-# Initialize the rate limiter
-limiter = Limiter(
-    get_remote_address,
-    app=app,
-    default_limits=["5 per hour"]  # Adjust the rate limit as needed
-)
+
 # Custom error message for rate limiting
 @app.errorhandler(429)
 def ratelimit_handler(e):
@@ -265,6 +276,7 @@ def bible_verse():
         return "Internal server error.", 500
     
 @app.route('/horoscope/<sign>', methods=['GET'])
+@session_key_required
 @limiter.limit("1000 per day")
 def render_horoscope_page(sign):
     # Define the zodiac signs (in lowercase) to match the URL
@@ -291,8 +303,7 @@ def render_clean_horoscope_with_uuid(sign, uuid):
     stored_uuid = session.get('horoscope_uuid')
     
     if not stored_uuid or stored_uuid != uuid:
-        return "You will need to purchase one of our daily horoscope bracelet to access this page. For existing users, please re-scan your bracelet. If you have any questions or concerns please contact echocraftllc@gmail.com", 404
-
+        return render_template('access_denied.html'), 404
     # If the UUID matches, clear it from the session for one-time use
     session.pop('horoscope_uuid', None)
 

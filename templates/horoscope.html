@@ -137,7 +137,7 @@
         
         <div class="message-container">
             <div class="icon-wrapper">
-                <img src="/static/horoscope-logo/love.png" alt="Love Icon" class="rating-icon">
+                <img src="{{ url_for('static', filename='horoscope-logo/love.png') }}" alt="Love Icon" class="rating-icon">
             </div>
             <!-- Love Explanation -->
             <div class="message-content">
@@ -148,7 +148,7 @@
         
         <div class="message-container">
             <div class="icon-wrapper">
-                <img src="/static/horoscope-logo/career.png" alt="Career Icon" class="rating-icon">
+                <img src="{{ url_for('static', filename='horoscope-logo/career.png') }}" alt="Career Icon" class="rating-icon">
             </div>
             <!-- Career Explanation -->
             <div class="message-content">
@@ -159,7 +159,7 @@
         
         <div class="message-container">
             <div class="icon-wrapper">
-                <img src="/static/horoscope-logo/health.png" alt="Health Icon" class="rating-icon">
+                <img src="{{ url_for('static', filename='horoscope-logo/health.png') }}" alt="Health Icon" class="rating-icon">
             </div>
             <!-- Health Explanation -->
             <div class="message-content">
@@ -170,7 +170,7 @@
         
         <div class="message-container">
             <div class="icon-wrapper">
-                <img src="/static/horoscope-logo/wealth.png" alt="Wealth Icon" class="rating-icon">
+                <img src="{{ url_for('static', filename='horoscope-logo/wealth.png') }}" alt="Wealth Icon" class="rating-icon">
             </div>
             <!-- Wealth Explanation -->
             <div class="message-content">
@@ -181,7 +181,7 @@
         
         <div class="message-container">
             <div class="icon-wrapper">
-                <img src="/static/horoscope-logo/star.png" alt="Overall Icon" class="rating-icon">
+                <img src="{{ url_for('static', filename='horoscope-logo/star.png') }}" alt="Overall Icon" class="rating-icon">
             </div>
             <!-- Overall Explanation -->
             <div class="message-content">
@@ -189,6 +189,7 @@
                 <p class="horoscope-message"><span class="overall-message"></span></p>
             </div>
         </div>
+        
         <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo" class="logo">
         <div class="social-media-links">
             <a href="https://www.facebook.com/profile.php?id=61560670367223" target="_blank" class="social-link"><img src="{{ url_for('static', filename='fb.ico') }}" alt="Facebook"></a>

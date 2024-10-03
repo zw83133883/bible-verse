@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+
+    <title>FAQ</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f4f4f9;
+            padding: 0px;
+        }
+
+        .container {
+            background-color: #fff;
+            max-width: 400px;
+            margin: 0 auto;
+            padding: 10px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            color: #ff4757;
+            text-align: center;
+        }
+
+        p {
+            color: #333;
+            font-size: 16px;
+            line-height: 1.5;
+            text-align: center;
+        }
+
+        /* Left-align lists with proper indentation */
+        ol, ul {
+            text-align: left; /* Ensure lists are left-aligned */
+            margin: 0 auto; /* Center the lists container */
+            padding-left: 40px; /* Add padding for indentation */
+        }
+
+        li {
+            margin-bottom: 10px; /* Add space between list items */
+        }
+
+        .copyright {
+            font-size: 12px;
+            color: rgb(0, 0, 0);
+            margin-top: 10px;
+            text-align: center;
+        }
+        .responsive-img {
+            max-width: 100%; /* Ensure the image doesn't exceed the container's width */
+            height: auto; /* Maintain aspect ratio */
+            display: block; /* Remove any inline spacing */
+            margin: 0 auto; /* Center the image if needed */
+        }
+        /* YouTube Video Player Styling */
+        #player-container {
+            display: block; /* Initially hidden, can be toggled with JavaScript */
+            width: 100%;
+            max-width: 100%; /* Ensures the container doesn’t exceed the viewport width */
+            height: 0;
+            padding-bottom: 56.25%; /* Creates a 16:9 aspect ratio */
+            position: relative; /* Allows for absolute positioning inside */
+            margin-bottom: 20px; /* Adds space below the player */
+        }
+
+        #player-container iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%; /* Makes sure the iframe covers the full player container */
+            border: none; /* Removes the default iframe border */
+        }
+
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Frequently Asked Questions</h1>
+
+        <h2>How to Scan Your Bracelet</h2>
+        <ol>
+            <li>Lock your device.</li>
+            <li>Bring the bracelet’s logo near your device’s NFC reader.</li>
+            <li>Unlock your device — it should scan immediately.</li>
+        </ol>
+        <img src="{{ url_for('static', filename='faq/how-to-scan.jpeg') }}" alt="How to Scan Bracelet" class="responsive-img">
+        <h2>iPhone Users</h2>
+        <div id="player-container">
+            <iframe id="player" width="100%" height="100%" 
+                src="https://www.youtube.com/embed/SUk2mgQJKfg?start=0"
+                frameborder="0" 
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                allowfullscreen>
+            </iframe>
+        </div>
+        <h2>Android Users</h2>
+        <div id="player-container">
+            <iframe id="player" width="100%" height="100%" 
+                src="https://www.youtube.com/embed/FibPav9B4zc?start=0"
+                frameborder="0" 
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                allowfullscreen>
+            </iframe>
+        </div>
+        <p>For Android users, please ensure that the NFC feature is enabled on your device before proceeding.</p>
+        <h2>Waterproofing Recommendations</h2>
+        <p>While our bracelets are designed to be water-resistant, we do not recommend the following:</p>
+        <ul>
+            <li>Wearing the bracelet while showering</li>
+            <li>Placing the bracelet in the washing machine</li>
+            <li>Submerging the bracelet in water for extended periods of time</li>
+        </ul>
+        <p>For the best care and longevity of your bracelet, please avoid these conditions.</p>
+
+        <div class="copyright">
+            <span>Copyright © Rancilili, all rights reserved</span>
+        </div>
+    </div>
+</body>
+</html>
