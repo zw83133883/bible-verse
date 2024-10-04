@@ -225,7 +225,7 @@ def get_random_scenic_image():
         return None
 
 @app.route('/static/styles.css')
-@limiter.limit("1000 per day")
+@limiter.limit("10000 per day")
 def styles():
     return app.send_static_file('styles.css')
 
@@ -249,23 +249,37 @@ def generate_unique_path():
 @session_key_required
 def random_verse():
     try:
-        bible_verse, reference,type = get_random_bible_verse()
+        # Generate a unique UUID and store it in the session
+        unique_id = str(uuid.uuid4())
+        session['bible_verse_uuid'] = unique_id  # Use 'bible_verse_uuid' for this project
+
+        # Retrieve random verse and scenic image
+        bible_verse, reference, type = get_random_bible_verse()
         image_path = get_random_scenic_image()
 
+        # Cache the verse using the user's IP address
         user_ip = request.remote_addr
-        result = cache_verse(user_ip, reference, bible_verse,type, image_path)
+        result = cache_verse(user_ip, reference, bible_verse, type, image_path)
+
         if result:
-            cached_reference,cached_verse, cached_type, cached_image_path,*_ = result
-            return redirect(url_for('bible_verse', verse=cached_verse, reference=cached_reference,image_path=cached_image_path))
-        # return redirect(url_for('bible_verse', path=unique_path)) 
+            cached_reference, cached_verse, cached_type, cached_image_path, *_ = result
+            # Redirect to the verse page, passing the cached values along with the UUID
+            return redirect(url_for('bible_verse', verse=cached_verse, reference=cached_reference, image_path=cached_image_path, uuid=unique_id))
+
     except Exception as e:
         logging.error(f"Error in /random_verse endpoint: {e}")
         return "Internal server error.", 500
     
 
-@app.route('/bible_verse', methods=['GET'])
+@app.route('/bible_verse/<uuid>', methods=['GET'])
 @limiter.limit("1000 per day")
-def bible_verse():
+def bible_verse(uuid):
+    stored_uuid = session.get('bible_verse_uuid')
+    
+    if not stored_uuid or stored_uuid != uuid:
+        return render_template('access_denied.html'), 404
+    # If the UUID matches, clear it from the session for one-time use
+    session.pop('bible_verse_uuid', None)
     try:
         verse = request.args.get('verse', '')
         reference = request.args.get('reference', '')
@@ -460,7 +474,7 @@ def cache_verse(ip_address, reference, verse, type, image_path):
                 cursor = conn.cursor()
                 
                 # Get the current time in the local timezone
-                now = datetime.datetime.now()
+                now = datetime.now()
                 today = now.strftime('%Y-%m-%d')
                 
                 # Check if the verse is already cached for the IP address today

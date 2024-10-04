@@ -92,33 +92,6 @@ body, html {
     flex-direction: column;
     align-items: center;
 }
-.rating-group {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start; /* Aligns everything to the left */
-    text-align: left;
-    margin-top: -50px;
-}
-.overall-rating img,
-.ratings-row img {
-    width: 38px;  /* Adjust the size of the star icon */
-    height: 38px;
-}
-
-.ratings-row {
-    margin-top: 5px;
-}
-
-.lucky-info {
-    margin-top: 5px;
-    text-align: left;
-}
-.lucky-info div {
-    margin: 5px 0; /* Add some space between each lucky-info item */
-}
-.rating-group .ratings-row {
-    margin: 5px 0; /* Space between rating rows */
-}
 
 .social-media-links {
     position: absolute;
@@ -162,21 +135,8 @@ body, html {
   border-radius: 4px;
   font-size: 14px;
 }
-
-
 /* Media Query for smaller screens (e.g., tablets) */
 @media (max-width: 768px) {
-    .horoscope-logo {
-        margin-top: 15px; /* Adjust the margin if needed */
-    }
-
-    .horoscope-logo img {
-        width: 150px; /* Adjust size for smaller screens */
-    }
-
-    .horoscope-date {
-        font-size: 1.2rem; /* Slightly smaller font size */
-    }
     .audio-button {
         bottom: 200px; /* Adjust for tablets */
         width: 100px; /* Adjust as needed */
@@ -220,47 +180,10 @@ body, html {
         -moz-appearance: menulist;   
         appearance: menulist;       */
     }
-    .rating-group {
-        align-items: flex-start;
-        text-align: left;
-    }
-
-    /* Reduce size of rating stars */
-    .ratings-row img {
-        width: 20px;
-        height: 20px;
-    }
-
-    /* Adjust lucky info text */
-    .lucky-info {
-        font-size: 1.5rem; /* Adjust font size */
-        margin-top: 5px;
-    }
-
-    .lucky-info div {
-        margin: 3px 0; /* Reduce margins for lucky info */
-    }
-
-    /* Adjust margin for the whole rating section */
-    .rating-group .verse {
-        margin-bottom: 10px;
-    }
 }
 
 /* Media Query for phones and smaller screens */
 @media (max-width: 480px) {
-    .horoscope-logo {
-        margin-top: 10px; /* Further adjust the margin */
-    }
-
-    .horoscope-logo img {
-        width: 120px; /* Adjust size for very small screens */
-    }
-
-    .horoscope-date {
-        font-size: 1rem; /* Smaller font size for readability */
-    }
-
     .audio-button {
         bottom: 150px; /* Adjust for phones */
         width: 75px; /* Adjust as needed */
@@ -302,30 +225,5 @@ body, html {
     .logo {
         width: 60px; /* Adjust width for phones */
         margin-bottom: 6px; /* Adjust margin for phones */
-    }
-    .rating-group {
-        align-items: flex-start;
-        text-align: left;
-    }
-
-    /* Further reduce size of rating stars */
-    .ratings-row img {
-        width: 16px;
-        height: 16px;
-    }
-
-    /* Adjust lucky info text for phones */
-    .lucky-info {
-        font-size: 1.2rem; /* Smaller font size */
-        margin-top: 3px;
-    }
-
-    .lucky-info div {
-        margin: 2px 0; /* Reduce margins even more */
-    }
-
-    /* Adjust margin for the rating rows */
-    .rating-group .verse {
-        margin-bottom: 8px;
     }
 }

@@ -49,6 +49,40 @@
             margin-top: 10px;
             text-align: center;
         }
+        .social-media-links {
+            display: flex;
+            justify-content: center;
+            gap: 5px;
+        }
+
+        .social-link {
+            display: inline-block;
+            margin: 0 5px;
+            color: #333;
+            font-size: 1px; /* Default icon size */
+        }
+
+        .social-link img {
+            width: 24px; /* Adjust icon size */
+            height: 24px;
+        }
+        .logo {
+            display: block;
+            padding: 5px;
+            margin: 0 auto;
+            width: 100px; /* Adjust width as needed */
+            height: auto;
+            margin-bottom: 10px; /* Add some space between logo and social links */
+            z-index: 999;
+        }
+
+        /* Copyright section (without logo) */
+        .copyright {
+            font-size: 12px; /* Adjust font size as needed */
+            color: white; /* Adjust color as needed */
+            margin-top: 10px;
+            text-align: center;
+        }
 
     </style>
 </head>
@@ -61,6 +95,13 @@
         <p>Check out Rancilili Official’s shop on TikTok! <a href="https://vt.tiktok.com/ZTFUxBrUv/?page=TikTokShop&utm_campaign=client_share&utm_source=more&share_app_id=1233" target="_blank">Visit our TikTok Shop</a>.</p>
         <p>Learn more about how to use your bracelet on our <a href="https://www.rancilili.com/faq" target="_blank">Rancilili Bracelet FAQ</a>.</p>
         <!-- <p>Learn more about how to use your bracelet on our <a href="http://192.168.1.100:5000/faq" target="_blank">FAQ page</a>.</p> -->
+        <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo" class="logo">
+        <div class="social-media-links">
+            <a href="https://www.facebook.com/profile.php?id=61560670367223" target="_blank" class="social-link"><img src="{{ url_for('static', filename='fb.ico') }}" alt="Facebook"></a>
+            <a href="https://x.com/Rancilili" target="_blank" class="social-link"><img src="{{ url_for('static', filename='twitter.ico') }}" alt="Twitter"></a>
+            <a href="https://www.instagram.com/rancilili_official/" target="_blank" class="social-link"><img src="{{ url_for('static', filename='ins.ico') }}" alt="Instagram"></a>
+            <a href="mailto:echocraftllc@email.com" class="social-link"><img src="{{ url_for('static', filename='email.ico') }}" alt="Email"></a>
+        </div>
         <div class="copyright">
             <span>Copyright © Rancilili, all rights reserved</span>
         </div>
