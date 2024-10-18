@@ -1,7 +1,13 @@
 import sqlite3
 import uuid
+import os
 from datetime import datetime, timedelta
 
+
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+db_path = os.path.join(BASE_DIR, 'bible.db')
+conn = sqlite3.connect('bible.db')
+cursor = conn.cursor()
 # Function to prompt for subscription type
 def prompt_subscription_type():
     print("Select Subscription Type to Generate or Renew:")
@@ -47,8 +53,7 @@ def calculate_expiration_date(subscription_type):
 
 # Function to generate, insert, and print UUIDs
 def generate_and_insert_uuids(tier, count):
-    conn = sqlite3.connect('bible.db')
-    cursor = conn.cursor()
+
 
     print(f"\nGenerating {count} UUID(s) for {tier.capitalize()} subscription:")
     
