@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daily Quran Verse @Rancilili</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css'>
+</head>
+<body style="background-image: url('{{ url_for('static', filename=image_path) }}');">
+    <div class="content">
+        <div class="reference-container">
+            <div class="reference">{{ reference }} ({{ reference_arabic }})</div>
+        </div>
+        <div class="verse-container">
+            <div class="verse">
+                <p>{{ verse }}</p>
+                <p>{{ verse_arabic }}</p>
+            </div>
+            <button class="audio-button"></button>
+        </div>
+    </div>
+
+    <div class="social-media-links">
+        <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo" class="logo">
+        <a href="https://www.facebook.com/profile.php?id=61560670367223" target="_blank" class="social-link"><img src="{{ url_for('static', filename='fb.ico') }}" alt="Facebook"></a>
+        <a href="https://x.com/Rancilili" target="_blank" class="social-link"><img src="{{ url_for('static', filename='twitter.ico') }}" alt="Twitter"></a>
+        <a href="https://www.instagram.com/rancilili_official/" target="_blank" class="social-link"><img src="{{ url_for('static', filename='ins.ico') }}" alt="Instagram"></a>
+        <a href="mailto:echocraftllc@email.com" class="social-link"><img src="{{ url_for('static', filename='email.ico') }}" alt="Email"></a>
+    </div>
+
+    <script>
+        // Function to handle audio playback
+        function setupAudioPlayback(audioUrl, audioButtonSelector) {
+            // Log the audio URL to verify if it's correct
+            console.log("Audio URL:", audioUrl);
+    
+            // Get the play button element using the provided selector
+            const audioButton = document.querySelector(audioButtonSelector);
+            
+            // Create an audio object
+            const audio = new Audio(audioUrl);
+            
+            // Add event listener to the play button
+            audioButton.addEventListener('click', function() {
+                // Toggle play/pause functionality
+                if (audio.paused) {
+                    audio.play();
+                    audioButton.classList.remove('paused');
+                    audioButton.classList.add('playing');  // Add 'playing' class
+                } else {
+                    audio.pause();
+                    audioButton.classList.remove('playing');
+                    audioButton.classList.add('paused');  // Add 'paused' class
+                }
+            });
+    
+            // Add event listener for when the audio finishes playing
+            audio.addEventListener('ended', function() {
+                // When the audio ends, revert the button to paused state
+                audioButton.classList.remove('playing');
+                audioButton.classList.add('paused');
+            });
+        }
+    
+        // Call the function to set up audio playback
+        const audioUrl = "{{ audio_urls }}";  // Pass the audio URL from the template
+        setupAudioPlayback(audioUrl, '.audio-button');  // Pass the selector for the button
+    </script>
+    
+    
+    
+</body>
+</html>
