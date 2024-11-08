@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 db_path = os.path.join(BASE_DIR, 'bible.db')
-conn = sqlite3.connect('bible.db')
+conn = sqlite3.connect(db_path)
 cursor = conn.cursor()
 # Function to prompt for subscription type
 def prompt_subscription_type():
@@ -78,8 +78,6 @@ def generate_and_insert_uuids(tier, count):
 
 # Function to renew an existing user's subscription by username
 def renew_subscription_by_username(username, subscription_type):
-    conn = sqlite3.connect('bible.db')
-    cursor = conn.cursor()
 
     # Check if the username exists
     cursor.execute('SELECT username, expiration_date FROM users WHERE username = ?', (username,))
