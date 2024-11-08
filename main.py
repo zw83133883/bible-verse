@@ -910,7 +910,7 @@ def get_cached_verse(ip_address):
 
     conn.close()
     return verse
-@app.before_first_request
+@app.before_request
 def set_default_daily_quran_verse():
     global daily_quran_verse
     global daily_quran_image
