@@ -527,6 +527,7 @@ def calculate_expiration(tier):
     return None
 
 @app.route('/echomimic_register', methods=['POST'])
+@limiter.limit("1000 per day")
 def register():
     data = request.json
     user_uuid = data.get("uuid")
@@ -574,6 +575,7 @@ def register():
 
 # Endpoint to handle login
 @app.route('/echomimic_login', methods=['POST'])
+@limiter.limit("1000 per day")
 def login():
     data = request.json
     username = data.get("username")
