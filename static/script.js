@@ -210,6 +210,7 @@ function loadExplanations(data) {
     fetch('/static/horoscope-json/rating_explanation.json')
         .then(response => response.json())
         .then(explanations => {
+            console.log("Explanations loaded:", explanations);
             // Helper function to get explanation by category and ID
             function getExplanation(category, rating, id) {
                 console.log("Category:", category);
@@ -218,7 +219,7 @@ function loadExplanations(data) {
                 console.log("Category data:", explanations[category]);
                 console.log("Rating group:", explanations[category][String(rating)]);
 
-                if (explanations[category] && explanations[category][rating]) {
+                if (explanations[category] && explanations[category][String(rating)]) {
                     const explanation = explanations[category][rating].find(e => e.id === id);
                     if (explanation) return explanation.message;
                 }
