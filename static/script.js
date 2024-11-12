@@ -212,6 +212,12 @@ function loadExplanations(data) {
         .then(explanations => {
             // Helper function to get explanation by category and ID
             function getExplanation(category, rating, id) {
+                console.log("Category:", category);
+                console.log("Rating:", rating);
+                console.log("ID:", id);
+                console.log("Category data:", explanations[category]);
+                console.log("Rating group:", explanations[category][String(rating)]);
+
                 if (explanations[category] && explanations[category][rating]) {
                     const explanation = explanations[category][rating].find(e => e.id === id);
                     if (explanation) return explanation.message;
