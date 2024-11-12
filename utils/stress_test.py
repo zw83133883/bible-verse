@@ -1,18 +1,27 @@
 import requests
-import concurrent.futures
+from concurrent.futures import ThreadPoolExecutor
 
-url = 'http://127.0.0.1:5000/random_verse'
+# Configuration
+url = "https://dailyreadbible.vip"  # Your website URL
+concurrency = 10  # Number of concurrent threads to simulate multiple users
 
-def make_request(url):
-    response = requests.get(url)
-    if response.status_code != 200:
-        print(f"Failed to fetch data: {response.status_code}")
+# Function to send a request
+def send_request():
+    try:
+        response = requests.get(url)
+        print(f"Status Code: {response.status_code}")
+    except requests.exceptions.RequestException as e:
+        print(f"Error: {e}")
 
-# Create a pool of threads
-with concurrent.futures.ThreadPoolExecutor() as executor:
-    # Submit the tasks
-    futures = [executor.submit(make_request, url) for _ in range(100)]
+# Main function to run the unlimited stress test without delay
+def stress_test():
+    with ThreadPoolExecutor(max_workers=concurrency) as executor:
+        while True:  # Infinite loop to send requests continuously
+            futures = [executor.submit(send_request) for _ in range(concurrency)]
+            
+            # Check for any exceptions in completed requests
+            for future in futures:
+                future.result()
 
-    # Wait for all the tasks to complete
-    for future in concurrent.futures.as_completed(futures):
-        pass  # Do nothing, just wait for completion
+if __name__ == "__main__":
+    stress_test()

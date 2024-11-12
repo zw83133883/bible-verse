@@ -42,12 +42,6 @@ limiter = Limiter(
     app=app,
     default_limits=["5 per hour"]  # Adjust the rate limit as needed
 )
-
-import sqlite3
-import random
-import logging
-from datetime import date, timedelta
-
 surah_verse_counts = {
     1: 7,    # Surah Al-Fatiha
     2: 286,  # Surah Al-Baqarah
@@ -166,6 +160,41 @@ surah_verse_counts = {
 }
 daily_quran_verse = None
 daily_quran_image = None
+
+# Function to get a random Quran verse
+def get_random_quran_verse():
+    # Randomly select a surah (chapter)
+    random_surah = random.randint(1, 114)
+
+    # Get the max number of ayat (verses) for the chosen surah
+    max_ayah = surah_verse_counts[random_surah]
+
+    # Randomly select an ayah (verse) within the surah
+    random_ayah = random.randint(1, max_ayah)
+
+    # Return the selected surah and ayah
+    return random_surah, random_ayah
+
+def get_random_scenic_image():
+    try:
+        image_directory = os.path.join('static', 'images')
+        image_file = random.choice(os.listdir(image_directory))
+        image_path = os.path.join('images', image_file).replace("\\", "/")
+        return image_path
+    except Exception as e:
+        logging.error(f"Error fetching scenic image: {e}")
+        return None
+
+def set_default_daily_quran_verse():
+    global daily_quran_verse
+    global daily_quran_image
+    daily_quran_image = get_random_scenic_image()
+    daily_quran_verse = get_random_quran_verse()
+    logging.info(f"Assigned default daily Quran verse on startup: Surah {daily_quran_verse[0]}, Ayah {daily_quran_verse[1]}")
+
+# Call this function once at startup
+set_default_daily_quran_verse()
+
 # Your existing function
 def clear_database_table():
     try:
@@ -210,19 +239,6 @@ def clear_database_table():
     except sqlite3.Error as e:
         logging.error(f"Error clearing the database table and assigning new horoscopes: {e}")
 
-# Function to get a random Quran verse
-def get_random_quran_verse():
-    # Randomly select a surah (chapter)
-    random_surah = random.randint(1, 114)
-
-    # Get the max number of ayat (verses) for the chosen surah
-    max_ayah = surah_verse_counts[random_surah]
-
-    # Randomly select an ayah (verse) within the surah
-    random_ayah = random.randint(1, max_ayah)
-
-    # Return the selected surah and ayah
-    return random_surah, random_ayah
 
 # Function to generate random light colors (for the lucky info)
 def get_random_light_color():
@@ -356,16 +372,6 @@ def get_random_bible_verse():
         logging.error(f"Error fetching Bible verse from database: {e}")
         return None, None
 
-
-def get_random_scenic_image():
-    try:
-        image_directory = os.path.join('static', 'images')
-        image_file = random.choice(os.listdir(image_directory))
-        image_path = os.path.join('images', image_file).replace("\\", "/")
-        return image_path
-    except Exception as e:
-        logging.error(f"Error fetching scenic image: {e}")
-        return None
 
 @app.route('/static/styles.css')
 @limiter.limit("10000 per day")
@@ -910,13 +916,9 @@ def get_cached_verse(ip_address):
 
     conn.close()
     return verse
-@app.before_request
-def set_default_daily_quran_verse():
-    global daily_quran_verse
-    global daily_quran_image
-    daily_quran_image = get_random_scenic_image()
-    daily_quran_verse = get_random_quran_verse()
-    logging.info(f"Assigned default daily Quran verse on startup: Surah {daily_quran_verse[0]}, Ayah {daily_quran_verse[1]}")
+
+
+
 
 @scheduler.task('cron', id='clear_database_task', hour=0, minute=0)
 def scheduled_task():

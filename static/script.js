@@ -211,8 +211,8 @@ function loadExplanations(data) {
         .then(response => response.json())
         .then(explanations => {
             // Helper function to get explanation by category and ID
-            function getExplanation(category, id) {
-                for (let rating in explanations[category]) {
+            function getExplanation(category, rating, id) {
+                if (explanations[category] && explanations[category][rating]) {
                     const explanation = explanations[category][rating].find(e => e.id === id);
                     if (explanation) return explanation.message;
                 }
@@ -220,11 +220,11 @@ function loadExplanations(data) {
             }
 
             // Update explanation text in the document based on retrieved IDs
-            document.querySelector('.love-message').innerText = getExplanation('love', data.love_explanation_id);
-            document.querySelector('.career-message').innerText = getExplanation('career', data.career_explanation_id);
-            document.querySelector('.health-message').innerText = getExplanation('health', data.health_explanation_id);
-            document.querySelector('.wealth-message').innerText = getExplanation('wealth', data.wealth_explanation_id);
-            document.querySelector('.overall-message').innerText = getExplanation('overall', data.overall_explanation_id);
+            document.querySelector('.love-message').innerText = getExplanation('love', data.love_rating, data.love_explanation_id);
+            document.querySelector('.career-message').innerText = getExplanation('career', data.career_rating, data.career_explanation_id);
+            document.querySelector('.health-message').innerText = getExplanation('health', data.health_rating,data.health_explanation_id);
+            document.querySelector('.wealth-message').innerText = getExplanation('wealth', data.wealth_rating,data.wealth_explanation_id);
+            document.querySelector('.overall-message').innerText = getExplanation('overall', data.overall_rating,data.overall_explanation_id);
         })
         .catch(error => console.error('Error loading explanations:', error));
 }
